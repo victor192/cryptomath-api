@@ -1,6 +1,5 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
 import {
@@ -10,6 +9,13 @@ import {
 import {
     syncronize as syncronizeModels
 } from "./models"
+import {
+    loadTasks as loadCaptchaTasks
+} from "./captcha";
+import {
+    outputLog,
+    outputError
+} from "./utils/console"
 import router from './routes'
 
 const port = process.env.PORT || 5000
@@ -33,7 +39,7 @@ const stop = (server) => async () => {
         server.close(async () => {
             await dbClose()
 
-            console.log('CryptoMath API stopped')
+            outputLog('CryptoMath API stopped')
         })
     } catch (error) {
        throw new Error(error)
@@ -43,16 +49,17 @@ const stop = (server) => async () => {
 const startup = async () => {
     try {
         await dbConnect()
+        await loadCaptchaTasks()
         await syncronizeModels()
 
         const server = app.listen(port, () => {
-            console.log(`CryptoMath API started on port ${port}`)
+            outputLog(`CryptoMath API started on port ${port}`)
         })
 
         process.on('SIGINT', stop(server))
         process.on('SIGTERM', stop(server))
     } catch(error) {
-        console.error(error)
+        outputError(error)
     }
 }
 

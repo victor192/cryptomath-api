@@ -1,23 +1,41 @@
-import {getConnection} from '../core/database'
-import {CaptchaModel} from "./captcha"
+import {
+    CaptchaModel,
+    CaptchaDefaults
+} from "./captcha"
+import {
+    outputLog
+} from "../utils/console"
 
 const models = [
     {
-        name: 'captcha',
-        model: CaptchaModel
+        create: CaptchaModel,
+        defaults: CaptchaDefaults
     }
 ]
 
 const instances = {}
 
-export const syncronize = async () => {
-    const db = getConnection()
+export const syncronize = () => {
+    try {
+        models.forEach(async (modelObject) => {
+            const model = modelObject.create()
+            outputLog(`Model '${model.name}' has been created`)
 
-    models.forEach(async (model) => {
-        instances[model.name] = await model.model()
-    })
+            await model.sync()
+            outputLog(`Model '${model.name}' has been synced`)
 
-    await db.sync({ force: true })
+            if (typeof(modelObject.defaults) === 'function') {
+                await modelObject.defaults(model)
+                outputLog(`Load defaults for model '${model.name}'`)
+            }
+
+            instances[model.name] = model
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
 }
 
-export const getInstance = (name) => instances[name] || false
+export const getInstance = (name) => {
+    return instances[name] || false
+}

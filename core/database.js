@@ -1,5 +1,9 @@
 const { Sequelize } = require('sequelize')
 
+import {
+    outputLog
+} from "../utils/console"
+
 let connected = false
 let connection = null
 
@@ -24,7 +28,7 @@ export const connect = async () => {
 
         connected = true
 
-        console.log('Connection to database has been established successfully.')
+        outputLog('Connection to database has been established successfully.')
     } catch (error) {
         throw new Error('Unable to connect to the database:', error)
     }
@@ -37,7 +41,7 @@ export const close = async() => {
 
             connected = false
 
-            console.log('Connection to database has been closed.')
+            outputLog('Connection to database has been closed.')
         } catch(error) {
             throw new Error('Unable to close database connection:', error)
         }
