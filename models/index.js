@@ -3,6 +3,9 @@ import {
     CaptchaDefaults
 } from "./captcha"
 import {
+    UserModel
+} from "./user"
+import {
     outputLog
 } from "../utils/console"
 
@@ -10,6 +13,9 @@ const models = [
     {
         create: CaptchaModel,
         defaults: CaptchaDefaults
+    },
+    {
+        create: UserModel
     }
 ]
 

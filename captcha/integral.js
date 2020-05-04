@@ -16,7 +16,7 @@ export default {
 
                 return String.raw`\lim_{\alpha \to 0} \int\limits_{0}^{${p}} x^2 \cos \alpha x \; d{x}`
             },
-            answer: (m) => 9 * Math.pos(m, 3)
+            answer: (m) => 9 * Math.pow(m, 3)
         }
     ]
 }

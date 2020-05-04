@@ -27,7 +27,7 @@ export default {
             math: (a, b) => {
                 const m = 3 * a * b
 
-                return String.raw`${m} \lim_{x \to 0} \frac{1}{x \sqrt{x}} \Bigg ( \sqrt{${a}} \arctan \sqrt{\frac{x}{${a}}} - \sqrt{${b}} \arctan \sqrt{\frac{x}{${b}}} \; \Bigg )`
+                return String.raw`${m} \cdot \lim_{x \to 0} \frac{1}{x \sqrt{x}} \Bigg ( \sqrt{${a}} \arctan \sqrt{\frac{x}{${a}}} - \sqrt{${b}} \arctan \sqrt{\frac{x}{${b}}} \; \Bigg )`
             },
             answer: (a, b) => a - b
         }

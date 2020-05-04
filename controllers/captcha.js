@@ -18,29 +18,37 @@ export const generate = async (req, res) => {
     const captcha = new Captcha(model)
 
     try {
-        await captcha.setData()
+        const loaded = await captcha.setData()
 
-        if (captcha.loaded) {
-            const token = await jwt.sign(captcha.data, process.env.JWT_PRIVATE_KEY, {expiresIn: 15 * 60})
-            const math = captcha.math
-
-            res.json(responseBody(
-                {token, math},
-                'generate',
-            ))
-        } else {
-            res.sendStatus(500)
-            res.json(responseBody(
+        if (!loaded) {
+            return res.json(responseBody(
                 null,
                 'generate',
                 500,
                 {
-                    type: 'model',
-                    message: 'Failed to load captcha data'
+                    source: 'captcha',
+                    type: 'not_loaded'
                 }
             ))
         }
-    } catch (eror) {
-        throw new Error(eror)
+
+        const token = await jwt.sign(captcha.data, process.env.JWT_PRIVATE_KEY, {expiresIn: 15 * 60})
+        const math = captcha.math
+
+        res.json(responseBody(
+            {token, math},
+            'generate',
+        ))
+    } catch (error) {
+        res.json(responseBody(
+            null,
+            'generate',
+            500,
+            {
+                source: 'internal',
+                type: 'exception',
+                message: error.message
+            }
+        ))
     }
 }
