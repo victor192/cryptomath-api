@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken')
 import {Captcha} from "../models/captcha"
 import {getInstance} from "../models"
 
+const CAPTCHA_TOKEN_EXPIRES_IN = 15
+
 const responseBody = (body, endpoint, code = 200, error = null) => ({
     data: body,
     context: {
@@ -32,7 +34,13 @@ export const generate = async (req, res) => {
             ))
         }
 
-        const token = await jwt.sign(captcha.data, process.env.JWT_PRIVATE_KEY, {expiresIn: 15 * 60})
+        const token = await jwt.sign(
+            captcha.data,
+            process.env.JWT_PRIVATE_KEY,
+            {
+                expiresIn: CAPTCHA_TOKEN_EXPIRES_IN * 60
+            }
+            )
         const math = captcha.math
 
         res.json(responseBody(

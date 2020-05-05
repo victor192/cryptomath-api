@@ -9,6 +9,8 @@ import {
 } from "../models/user"
 import {getInstance} from "../models"
 
+const AUTH_TOKEN_EXPIRES_IN = 30
+
 const responseBody = (body, endpoint, code = 200, error = null) => ({
     data: body,
     context: {
@@ -20,7 +22,58 @@ const responseBody = (body, endpoint, code = 200, error = null) => ({
 })
 
 export const login = async(res, req) => {
+    const data = {
+        email: res.body.email,
+        password: res.body.password
+    }
 
+    const userModel = getInstance('User')
+    const user = new User(userModel)
+
+    try {
+        const [status, error] = await user.login(data)
+
+        if (!status) {
+            return req.json(responseBody(
+                null,
+                'login',
+                500,
+                {
+                    source: 'user',
+                    type: error
+                }
+            ))
+        }
+
+        const expiresIn = AUTH_TOKEN_EXPIRES_IN * 60
+        const token = await jwt.sign(
+            user.data,
+            process.env.JWT_PRIVATE_KEY,
+            {
+                expiresIn
+            }
+        )
+
+        req.json(responseBody(
+            {
+                accessToken: token,
+                expiresIn
+            },
+            'login'
+        ))
+    }
+    catch (error) {
+        req.json(responseBody(
+            null,
+            'login',
+            500,
+            {
+                source: 'internal',
+                type: 'exception',
+                message: error.message
+            }
+        ))
+    }
 }
 
 export const register = async (res, req) => {
