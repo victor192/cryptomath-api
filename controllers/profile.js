@@ -13,17 +13,17 @@ const responseBody = (body, endpoint, code = 200, error = null) => ({
     }
 })
 
-export const validate = async (req, res) => {
+export const validate = async (req, res, next) => {
     try {
-        req.user = await jwt.verify(req.token, process.env.JWT_PRIVATE_KEY)
-        next()
+        res.locals.user = await jwt.verify(req.token, process.env.JWT_PRIVATE_KEY)
+        return next()
     } catch (error) {
-        res.sendStatus(401).json({"data": "unautorized"})
+        return res.sendStatus(401)
     }
 }
 
 export const me = async (res, req) => {
-    const userId = req.user.id
+    const userId = req.locals.user.id
     const userModel = getInstance('User')
     const user = new User(userModel)
 
@@ -31,7 +31,7 @@ export const me = async (res, req) => {
         const loaded = await user.get(userId)
 
         if (!loaded) {
-            req.sendStatus(401).json(responseBody(
+            return req.sendStatus(401).json(responseBody(
                 null,
                 'profile',
                 401,

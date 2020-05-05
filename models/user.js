@@ -71,7 +71,8 @@ export class User {
         this.dataProxy = {
             id: user.id,
             displayName: user.displayName,
-            email: user.email
+            email: user.email,
+            hash: md5('' + user.id + user.displayName + user.email)
         }
     }
 
