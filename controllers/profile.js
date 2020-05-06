@@ -22,8 +22,8 @@ export const validate = async (req, res, next) => {
     }
 }
 
-export const me = async (res, req) => {
-    const userId = req.locals.user.id
+export const me = async (req, res) => {
+    const userId = res.locals.user.id
     const userModel = getInstance('User')
     const user = new User(userModel)
 
@@ -31,7 +31,7 @@ export const me = async (res, req) => {
         const loaded = await user.get(userId)
 
         if (!loaded) {
-            return req.sendStatus(401).json(responseBody(
+            return res.sendStatus(401).json(responseBody(
                 null,
                 'profile',
                 401,
@@ -42,12 +42,12 @@ export const me = async (res, req) => {
             ))
         }
 
-        req.json(responseBody(
+        res.json(responseBody(
             user.data,
             'profile'
         ))
     } catch (error) {
-        req.sendStatus(401).json(responseBody(
+        res.sendStatus(401).json(responseBody(
             null,
             'profile',
             401,

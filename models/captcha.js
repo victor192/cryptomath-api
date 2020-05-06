@@ -60,7 +60,7 @@ export class Captcha {
         this.db = getConnection()
         this.model = model
         this.difficulty = difficulty || 5
-        this.data = false
+        this.data = null
         this.math = ''
     }
 

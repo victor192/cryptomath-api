@@ -21,10 +21,10 @@ const responseBody = (body, endpoint, code = 200, error = null) => ({
     }
 })
 
-export const login = async(res, req) => {
+export const login = async(req, res) => {
     const data = {
-        email: res.body.email,
-        password: res.body.password
+        email: req.body.email,
+        password: req.body.password
     }
 
     const userModel = getInstance('User')
@@ -34,7 +34,7 @@ export const login = async(res, req) => {
         const [status, error] = await user.login(data)
 
         if (!status) {
-            return req.json(responseBody(
+            return res.json(responseBody(
                 null,
                 'login',
                 500,
@@ -54,7 +54,7 @@ export const login = async(res, req) => {
             }
         )
 
-        req.json(responseBody(
+        res.json(responseBody(
             {
                 accessToken: token,
                 expiresIn
@@ -63,7 +63,7 @@ export const login = async(res, req) => {
         ))
     }
     catch (error) {
-        req.json(responseBody(
+        res.json(responseBody(
             null,
             'login',
             500,
@@ -76,16 +76,16 @@ export const login = async(res, req) => {
     }
 }
 
-export const register = async (res, req) => {
-    const captcha = res.body.captcha
+export const register = async (req, res) => {
+    const captcha = req.body.captcha
     const data = {
         captcha: {
             token: captcha.token || '',
             answer: captcha.answer || ''
         },
-        displayName: res.body.displayName || '',
-        email: res.body.email || '',
-        password: res.body.password || ''
+        displayName: req.body.displayName || '',
+        email: req.body.email || '',
+        password: req.body.password || ''
     }
 
     try {
@@ -96,7 +96,7 @@ export const register = async (res, req) => {
         const loaded = await validateCaptcha.setData()
 
         if (!loaded) {
-            return req.json(responseBody(
+            return res.json(responseBody(
                 null,
                 'register',
                 500,
@@ -108,7 +108,7 @@ export const register = async (res, req) => {
         }
 
         if (!validateCaptcha.validate(decoded.params, data.captcha.answer)) {
-            return req.json(responseBody(
+            return res.json(responseBody(
                 null,
                 'register',
                 500,
@@ -129,7 +129,7 @@ export const register = async (res, req) => {
         })
 
         if (!created) {
-            return req.json(responseBody(
+            return res.json(responseBody(
                 null,
                 'register',
                 500,
@@ -140,13 +140,13 @@ export const register = async (res, req) => {
             ))
         }
 
-        req.json(responseBody(
+        res.json(responseBody(
             user.data,
             'register'
         ))
     } catch(error) {
         if (error.name === 'TokenExpiredError') {
-            req.json(responseBody(
+            res.json(responseBody(
                 null,
                 'register',
                 500,
@@ -159,7 +159,7 @@ export const register = async (res, req) => {
         else if (error.name === 'SequelizeValidationError') {
             const item = error.errors[0]
 
-            req.json(responseBody(
+            res.json(responseBody(
                 null,
                 'register',
                 500,
@@ -170,7 +170,7 @@ export const register = async (res, req) => {
             ))
         }
         else {
-            req.json(responseBody(
+            res.json(responseBody(
                 null,
                 'register',
                 500,

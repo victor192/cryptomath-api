@@ -3,10 +3,24 @@ import {
     CaptchaDefaults
 } from "./captcha"
 import {
-    UserModel
+    UserModel,
+    UserDefaults
 } from "./user"
 import {
-    outputLog
+    ArticleDefaults,
+    ArticleModel
+} from "./article"
+import {
+    HubModel,
+    HubDefaults
+} from "./hub";
+import {
+    TagModel,
+    TagDefaults
+} from "./tag";
+import {
+    outputLog,
+    outputWarning
 } from "../utils/console"
 
 const models = [
@@ -15,19 +29,37 @@ const models = [
         defaults: CaptchaDefaults
     },
     {
-        create: UserModel
+        create: UserModel,
+        defaults: UserDefaults
+    },
+    {
+        create: ArticleModel,
+        defaults: ArticleDefaults
+    },
+    {
+        create: HubModel,
+        defaults: HubDefaults
+    },
+    {
+        create: TagModel,
+        defaults: TagDefaults
     }
 ]
 
 const instances = {}
+const SYNC_FORCE = true
 
 export const syncronize = () => {
+    if (SYNC_FORCE) {
+        outputWarning('Sync force mode is enabled')
+    }
+
     try {
         models.forEach(async (modelObject) => {
             const model = modelObject.create()
             outputLog(`Model '${model.name}' has been created`)
 
-            await model.sync()
+            await model.sync({force: SYNC_FORCE})
             outputLog(`Model '${model.name}' has been synced`)
 
             if (typeof(modelObject.defaults) === 'function') {

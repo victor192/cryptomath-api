@@ -2,7 +2,8 @@ const bcrypt = require('bcrypt')
 const md5 = require('md5')
 const { Op, DataTypes } = require('sequelize')
 
-import {getConnection} from "../core/database";
+import {getConnection} from "../core/database"
+import {users} from "../tests/users"
 
 export const UserModel = () => {
     const db = getConnection()
@@ -41,7 +42,7 @@ export const UserModel = () => {
             }
         },
         {
-            tableName: 'user',
+            tableName: 'users',
             hooks: {
                 beforeCreate: async function(user) {
                     const salt = await bcrypt.genSalt(10)
@@ -61,10 +62,23 @@ export const UserModel = () => {
     return model
 }
 
+export const UserDefaults = (model) => {
+    try {
+        users.forEach(async (user) => {
+            await model.findOrCreate({
+                where: {id: user.id, email: user.email},
+                defaults: user
+            })
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
+}
+
 export class User {
     constructor(model) {
         this.model = model
-        this.dataProxy = false
+        this.dataProxy = null
     }
 
     set data(user) {
