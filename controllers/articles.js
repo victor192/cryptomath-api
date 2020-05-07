@@ -1,8 +1,9 @@
-import {getInstance} from "../models";
-import {Articles} from "../models/article";
-import {User} from "../models/user";
+import {getInstance} from "../models"
+import {Articles} from "../models/article"
+import {User} from "../models/user"
 import {Hubs} from "../models/hub"
 import {Tags} from "../models/tag"
+import {randomInt} from "../utils/math"
 
 const ARTICLES_LIMIT = 10
 const HUBS_LIMIT = 10
@@ -63,8 +64,14 @@ export const all = async (req, res) => {
 
             if (userLoaded) {
                 const userData = user.data
-
-                articlesData.push(Object.assign(article, {
+                const articleObject = {
+                    id: article.id,
+                    title: article.title,
+                    createdAt: article.createdAt,
+                    stats: {
+                        answers: randomInt(0, 5),
+                        votes: randomInt(-5, 5)
+                    },
                     author: {
                         id: userData.id,
                         displayName: userData.displayName,
@@ -72,7 +79,9 @@ export const all = async (req, res) => {
                     },
                     hubs: hubs.data,
                     tags: tags.data
-                }))
+                }
+
+                articlesData.push(articleObject)
             }
         }
 

@@ -13,5 +13,10 @@ export const tags = [
         id: 3,
         name: 'algorithms',
         hub: 1
+    },
+    {
+        id: 4,
+        name: 'php',
+        hub: 2
     }
 ]
