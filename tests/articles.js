@@ -5,7 +5,8 @@ export const articles = [
         raw: 'test',
         author: 1,
         hubs: [1],
-        tags: [1]
+        tags: [1],
+        createdAt: '2020-05-06 23:18:42.528+03'
     },
     {
         id: 2,
@@ -13,7 +14,8 @@ export const articles = [
         raw: 'test',
         author: 1,
         hubs: [1],
-        tags: [2, 3]
+        tags: [2, 3],
+        createdAt: '2020-05-07 01:29:42.528+03'
     },
     {
         id: 3,
@@ -21,7 +23,8 @@ export const articles = [
         raw: 'test',
         author: 1,
         hubs: [1],
-        tags: [3]
+        tags: [3],
+        createdAt: '2020-05-07 07:15:42.528+03'
     },
     {
         id: 4,
@@ -29,6 +32,7 @@ export const articles = [
         raw: 'ahaha',
         author: 2,
         hubs: [2],
-        tags: [4]
+        tags: [4],
+        createdAt: '2020-05-08 10:51:42.528+03'
     }
 ]

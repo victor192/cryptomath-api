@@ -24,7 +24,7 @@ const responseBody = (
         limit,
         offset,
         total,
-        status: error ? 'error' : 'success',
+        success: !error,
         code,
         error
     }

@@ -15,7 +15,7 @@ const responseBody = (body, endpoint, code = 200, error = null) => ({
     data: body,
     context: {
         endpoint: `/auth/${endpoint}`,
-        status: error ? 'error' : 'success',
+        success: !error,
         code,
         error
     }
