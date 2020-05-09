@@ -14,5 +14,13 @@ export const users = [
         password: 'Blockchair12345',
         confirmCode: 'effcd6150a7841b55c3997e3d4588117',
         confirmedAt: '2020-05-06 21:16:42.528+03'
+    },
+    {
+        id: 3,
+        displayName: 'Saurabh',
+        email: 'saura@email.com',
+        password: '12345Blockchair',
+        confirmCode: 'effcd6150a7841b55c3997e3d4588117',
+        confirmedAt: '2020-05-09 11:18:12.528+03'
     }
 ]

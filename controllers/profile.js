@@ -3,7 +3,12 @@ import {User} from "../models/user";
 
 const jwt = require('jsonwebtoken')
 
-const responseBody = (body, endpoint, code = 200, error = null) => ({
+const responseBody = (
+    body,
+    endpoint,
+    code = 200,
+    error = null
+) => ({
     data: body,
     context: {
         endpoint: `/profile/${endpoint}`,

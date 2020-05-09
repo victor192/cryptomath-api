@@ -11,7 +11,12 @@ import {getInstance} from "../models"
 
 const AUTH_TOKEN_EXPIRES_IN = 30
 
-const responseBody = (body, endpoint, code = 200, error = null) => ({
+const responseBody = (
+    body,
+    endpoint,
+    code = 200,
+    error = null
+) => ({
     data: body,
     context: {
         endpoint: `/auth/${endpoint}`,

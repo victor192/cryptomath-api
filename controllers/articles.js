@@ -37,16 +37,21 @@ export const all = async (req, res) => {
     }
 
     const articleModel = getInstance('Article')
-    const articles = new Articles(articleModel, data)
+    const articles = new Articles({
+        articleModel,
+        ...data
+    })
     const userModel = getInstance('User')
     const user = new User(userModel)
-    const hubsModel = getInstance('Hub')
-    const hubs = new Hubs(hubsModel, {
+    const hubModel = getInstance('Hub')
+    const hubs = new Hubs({
+        hubModel,
         limit: HUBS_LIMIT,
         offset: 0
     })
-    const tagsModel = getInstance('Tag')
-    const tags = new Tags(tagsModel, {
+    const tagModel = getInstance('Tag')
+    const tags = new Tags({
+        tagModel,
         limit: TAGS_LIMIT,
         offset: 0
     })
@@ -59,8 +64,8 @@ export const all = async (req, res) => {
         for (let article of articles.data) {
             const userLoaded = await user.get(article.author)
 
-            await hubs.allIn(article.hubs)
-            await tags.allIn(article.tags)
+            await hubs.setAllIn(article.hubs)
+            await tags.setAllIn(article.tags)
 
             if (userLoaded) {
                 const userData = user.data
@@ -69,8 +74,8 @@ export const all = async (req, res) => {
                     title: article.title,
                     createdAt: article.createdAt,
                     stats: {
-                        answers: randomInt(0, 5),
-                        votes: randomInt(-5, 5)
+                        answers: randomInt(0, 5), // fake
+                        votes: randomInt(-5, 5) // fake
                     },
                     author: {
                         id: userData.id,

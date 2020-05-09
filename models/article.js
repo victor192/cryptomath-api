@@ -51,17 +51,17 @@ export const ArticleDefaults = (model) => {
 }
 
 export class Articles {
-    constructor(model, data) {
-        this.model = model
-        this.limit = data.limit
-        this.offset = data.offset
+    constructor({articleModel, limit, offset}) {
+        this.articleModel = articleModel
+        this.limit = limit
+        this.offset = offset
         this.data = []
         this.total = 0
     }
 
     async setData() {
         try {
-            this.data = await this.model.findAll({
+            this.data = await this.articleModel.findAll({
                 attributes: ['id', 'title', 'author', 'createdAt', 'hubs', 'tags'],
                 order: [
                     ['createdAt', 'DESC']
@@ -70,7 +70,7 @@ export class Articles {
                 limit: this.limit
             })
 
-            this.total = await this.model.count()
+            this.total = await this.articleModel.count()
 
             return true
         } catch (error) {

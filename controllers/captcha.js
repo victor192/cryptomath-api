@@ -5,7 +5,12 @@ import {getInstance} from "../models"
 
 const CAPTCHA_TOKEN_EXPIRES_IN = 15
 
-const responseBody = (body, endpoint, code = 200, error = null) => ({
+const responseBody = (
+    body,
+    endpoint,
+    code = 200,
+    error = null
+) => ({
     data: body,
     context: {
         endpoint: `/captcha/${endpoint}`,

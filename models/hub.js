@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize')
+const { Op, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
 import {hubs} from "../tests/hubs"
@@ -41,7 +41,7 @@ export class Hub {
         this.data = null
     }
 
-    async get(id) {
+    async setData(id) {
         try {
             const hub = await this.model.findOne({
                 where: {
@@ -63,17 +63,54 @@ export class Hub {
 }
 
 export class Hubs {
-    constructor(model, data) {
-        this.model = model
-        this.limit = data.limit
-        this.offset = data.offset
+    constructor({hubModel, articleModel, limit, offset}) {
+        this.hubModel = hubModel
+        this.articleModel = articleModel
+        this.limit = limit
+        this.offset = offset
         this.data = []
         this.total = 0
     }
 
-    async allIn(ids) {
+    async setAll() {
         try {
-            const hubs = await this.model.findAndCountAll({
+            const hubs = await this.hubModel.findAll({
+                attributes: ['id', 'name'],
+                order: [
+                    ['createdAt', 'DESC']
+                ],
+                offset: this.offset,
+                limit: this.limit
+            })
+
+            for (let hub of hubs) {
+                const articles = await this.articleModel.count({
+                    where: {
+                        hubs: {
+                            [Op.contains]: [hub.id]
+                        }
+                    }
+                })
+
+                this.data.push({
+                    id: hub.id,
+                    name: hub.name,
+                    createdAt: hub.createdAt,
+                    articles
+                })
+            }
+
+            this.total = await this.hubModel.count()
+
+            return true
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async setAllIn(ids) {
+        try {
+            const hubs = await this.hubModel.findAndCountAll({
                 attributes: ['id', 'name', 'createdAt'],
                 where: {
                     id: ids

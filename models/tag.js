@@ -45,7 +45,7 @@ export class Tag {
         this.data = null
     }
 
-    async get(id) {
+    async setData(id) {
         try {
             const tag = await this.model.findOne({
                 where: {
@@ -67,18 +67,40 @@ export class Tag {
 }
 
 export class Tags {
-    constructor(model, data) {
-        this.model = model
-        this.limit = data.limit
-        this.offset = data.offset
+    constructor({tagModel, limit, offset}) {
+        this.tagModel = tagModel
+        this.limit = limit
+        this.offset = offset
         this.data = []
         this.total = 0
     }
 
-    async allIn(ids) {
+    async setAllInHub(hubId) {
         try {
-            const tags = await this.model.findAndCountAll({
-                attributes: ['id', 'name', 'hub', 'createdAt'],
+            const tags = await this.tagModel.findAndCountAll({
+                attributes: ['id', 'name', 'createdAt'],
+                where: {
+                    hub: hubId
+                },
+                order: [
+                    ['createdAt', 'DESC']
+                ],
+                offset: this.offset,
+                limit: this.limit
+            })
+
+            this.data = tags.rows
+            this.total = tags.count
+
+            return true
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async setAllIn(ids) {
+        try {
+            const tags = await this.tagModel.findAndCountAll({
                 where: {
                     id: ids
                 },

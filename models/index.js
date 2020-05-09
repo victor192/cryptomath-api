@@ -7,6 +7,10 @@ import {
     UserDefaults
 } from "./user"
 import {
+    FundModel,
+    FundDefaults
+} from "./fund"
+import {
     ArticleDefaults,
     ArticleModel
 } from "./article"
@@ -31,6 +35,10 @@ const models = [
     {
         create: UserModel,
         defaults: UserDefaults
+    },
+    {
+        create: FundModel,
+        defaults: FundDefaults
     },
     {
         create: ArticleModel,

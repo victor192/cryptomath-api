@@ -6,5 +6,9 @@ export const hubs = [
     {
         id: 2,
         name: 'programming'
+    },
+    {
+        id: 3,
+        name: 'blockchain'
     }
 ]
