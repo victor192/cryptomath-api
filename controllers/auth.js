@@ -1,13 +1,11 @@
 const jwt = require('jsonwebtoken')
 
 import {
-    Captcha,
     ValidateCaptcha
 } from "../models/captcha"
 import {
     User
 } from "../models/user"
-import {getInstance} from "../models"
 
 const AUTH_TOKEN_EXPIRES_IN = 30
 
@@ -32,8 +30,7 @@ export const login = async(req, res) => {
         password: req.body.password
     }
 
-    const userModel = getInstance('User')
-    const user = new User(userModel)
+    const user = new User()
 
     try {
         const [status, error] = await user.login(data)
@@ -95,8 +92,7 @@ export const register = async (req, res) => {
 
     try {
         const decoded = await jwt.verify(data.captcha.token, process.env.JWT_PRIVATE_KEY)
-        const captchaModel = getInstance('Captcha')
-        const validateCaptcha = new ValidateCaptcha(captchaModel, decoded.id)
+        const validateCaptcha = new ValidateCaptcha(decoded.id)
 
         const loaded = await validateCaptcha.setData()
 
@@ -124,8 +120,7 @@ export const register = async (req, res) => {
             ))
         }
 
-        const userModel = getInstance('User')
-        const user = new User(userModel)
+        const user = new User()
 
         const created = await user.create({
             displayName: data.displayName,

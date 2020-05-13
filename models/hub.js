@@ -1,6 +1,7 @@
-const { Op, DataTypes } = require('sequelize')
+const { Sequelize, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
+import {getInstance} from "./index";
 import {hubs} from "../tests/hubs"
 
 export const HubModel = () => {
@@ -14,11 +15,11 @@ export const HubModel = () => {
         },
         name: {
             type: DataTypes.TEXT,
-            primaryKey: true,
             allowNull: false
         },
     }, {
-        tableName: 'hubs',
+        freezeTableName: true,
+        tableName: 'Hubs',
     })
 }
 
@@ -63,9 +64,11 @@ export class Hub {
 }
 
 export class Hubs {
-    constructor({hubModel, articleModel, limit, offset}) {
-        this.hubModel = hubModel
-        this.articleModel = articleModel
+    constructor({limit, offset}) {
+        this.db = getConnection()
+        this.hubModel = getInstance('Hub')
+        this.articleModel = getInstance('Article')
+        this.articleHubModel = getInstance('ArticleHub')
         this.limit = limit
         this.offset = offset
         this.data = []
@@ -74,56 +77,27 @@ export class Hubs {
 
     async setAll() {
         try {
-            const hubs = await this.hubModel.findAll({
-                attributes: ['id', 'name'],
-                order: [
-                    ['createdAt', 'DESC']
-                ],
-                offset: this.offset,
-                limit: this.limit
+            this.data = await this.db.query(`SELECT 
+                "Hub"."id", 
+                "Hub"."name", 
+                "Hub"."createdAt", 
+                count("Article"."id") AS "articles" 
+                    FROM "${this.hubModel.tableName}" AS "Hub" 
+                    LEFT JOIN "${this.articleHubModel.tableName}" AS "ArticleHub" ON "Hub"."id" = "ArticleHub"."hub" 
+                    INNER JOIN "${this.articleModel.tableName}" AS "Article" ON "Article"."id" = "ArticleHub"."article"      
+                GROUP BY 
+                    "Hub"."id", 
+                    "Hub"."name", 
+                    "Hub"."createdAt" 
+                ORDER BY count("Article"."id") DESC 
+                LIMIT ${this.limit}
+                OFFSET ${this.offset}
+            `, {
+                model: this.hubModel,
+                type: Sequelize.QueryTypes.SELECT
             })
-
-            for (let hub of hubs) {
-                const articles = await this.articleModel.count({
-                    where: {
-                        hubs: {
-                            [Op.contains]: [hub.id]
-                        }
-                    }
-                })
-
-                this.data.push({
-                    id: hub.id,
-                    name: hub.name,
-                    createdAt: hub.createdAt,
-                    articles
-                })
-            }
 
             this.total = await this.hubModel.count()
-
-            return true
-        } catch (error) {
-            throw error
-        }
-    }
-
-    async setAllIn(ids) {
-        try {
-            const hubs = await this.hubModel.findAndCountAll({
-                attributes: ['id', 'name', 'createdAt'],
-                where: {
-                    id: ids
-                },
-                order: [
-                    ['createdAt', 'DESC']
-                ],
-                offset: this.offset,
-                limit: this.limit
-            })
-
-            this.data = hubs.rows
-            this.total = hubs.count
 
             return true
         } catch (error) {

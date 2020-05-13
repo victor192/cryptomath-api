@@ -9,7 +9,9 @@ import {
     close as dbClose
 } from './core/database'
 import {
-    syncronize as syncronizeModels
+    create as createModels,
+    associate as setModelsAssociations,
+    synchronize as synchronizeModels
 } from "./models"
 import {
     loadTasks as loadCaptchaTasks
@@ -54,7 +56,10 @@ const startup = async () => {
     try {
         await dbConnect()
         await loadCaptchaTasks()
-        await syncronizeModels()
+
+        createModels()
+        setModelsAssociations()
+        synchronizeModels()
 
         const server = app.listen(port, () => {
             outputLog(`CryptoMath API started on port ${port}`)

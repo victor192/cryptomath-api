@@ -1,4 +1,3 @@
-import {getInstance} from "../models";
 import {User} from "../models/user";
 
 const jwt = require('jsonwebtoken')
@@ -29,8 +28,7 @@ export const validate = async (req, res, next) => {
 
 export const me = async (req, res) => {
     const userId = res.locals.user.id
-    const userModel = getInstance('User')
-    const user = new User(userModel)
+    const user = new User()
 
     try {
         const loaded = await user.get(userId)

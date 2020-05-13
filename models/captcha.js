@@ -1,6 +1,7 @@
 const { Op, DataTypes } = require('sequelize')
 
 import {getConnection} from '../core/database'
+import {getInstance} from "./index";
 import {getTasks, getTask} from '../captcha'
 
 export const CaptchaModel = () => {
@@ -32,7 +33,8 @@ export const CaptchaModel = () => {
         }
     },
     {
-        tableName: 'captcha'
+        freezeTableName: true,
+        tableName: 'Captchas'
     })
 }
 
@@ -56,9 +58,9 @@ export const CaptchaDefaults = (model) => {
 }
 
 export class Captcha {
-    constructor(model, difficulty) {
+    constructor(difficulty) {
         this.db = getConnection()
-        this.model = model
+        this.captchaModel = getInstance('Captcha')
         this.difficulty = difficulty || 5
         this.data = null
         this.math = ''
@@ -66,7 +68,7 @@ export class Captcha {
 
     async setData() {
         try {
-            const data = await this.model.findOne({
+            const data = await this.captchaModel.findOne({
                 where: {
                     difficulty: {
                         [Op.lte]: this.difficulty
@@ -97,15 +99,15 @@ export class Captcha {
 }
 
 export class ValidateCaptcha {
-    constructor(model, id) {
-        this.model = model
+    constructor(id) {
+        this.captchaModel = getInstance('Captcha')
         this.id = id
         this.answer = null
     }
 
     async setData() {
         try {
-            const data = await this.model.findOne({
+            const data = await this.captchaModel.findOne({
                 where: {
                     id: this.id
                 }

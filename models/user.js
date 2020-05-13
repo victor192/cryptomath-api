@@ -3,6 +3,7 @@ const md5 = require('md5')
 const { Op, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
+import {getInstance} from "./index";
 import {users} from "../tests/users"
 
 export const UserModel = () => {
@@ -33,6 +34,10 @@ export const UserModel = () => {
                     is: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/i
                 }
             },
+            hash: {
+                type: DataTypes.TEXT,
+                allowNull: false
+            },
             confirmCode: {
                 type: DataTypes.TEXT,
                 allowNull: false
@@ -42,13 +47,15 @@ export const UserModel = () => {
             }
         },
         {
-            tableName: 'users',
+            freezeTableName: true,
+            tableName: 'Users',
             hooks: {
                 beforeCreate: async function(user) {
                     const salt = await bcrypt.genSalt(10)
                     const confirmPlain = user.confirmCode + Date.now().toString()
 
                     user.password = await bcrypt.hash(user.password, salt)
+                    user.hash = md5(Date.now().toString() + user.hash)
                     user.confirmCode = md5(confirmPlain)
                 }
             }
@@ -76,8 +83,8 @@ export const UserDefaults = (model) => {
 }
 
 export class User {
-    constructor(model) {
-        this.model = model
+    constructor() {
+        this.userModel = getInstance('User')
         this.dataProxy = null
     }
 
@@ -86,7 +93,7 @@ export class User {
             id: user.id,
             displayName: user.displayName,
             email: user.email,
-            hash: md5('' + user.id + user.displayName + user.email)
+            hash: user.hash
         }
     }
 
@@ -96,7 +103,7 @@ export class User {
 
     async create(data) {
         try {
-            const count = await this.model.count({
+            const count = await this.userModel.count({
                 where: {
                     email: data.email
                 }
@@ -107,9 +114,10 @@ export class User {
             }
 
             const userData = Object.assign(data, {
-                confirmCode: '' + data.email + data.displayName
+                confirmCode: '' + data.email + data.displayName,
+                hash: md5(self.confirmCode)
             })
-            const user = this.model.build(userData)
+            const user = this.userModel.build(userData)
             await user.validate()
             await user.save()
 
@@ -123,7 +131,7 @@ export class User {
 
     async login(data) {
         try {
-            const user = await this.model.findOne({
+            const user = await this.userModel.findOne({
                 where: {
                     email: data.email,
                     confirmedAt: {
@@ -152,7 +160,7 @@ export class User {
 
     async get(id) {
         try {
-            const user = await this.model.findOne({
+            const user = await this.userModel.findOne({
                 where: {
                     id: id
                 }

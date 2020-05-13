@@ -1,4 +1,3 @@
-import {getInstance} from "../models";
 import {Hubs} from "../models/hub";
 import {Tags} from "../models/tag"
 
@@ -32,16 +31,8 @@ export const all = async (req, res) => {
         offset: parseInt(req.query.offset) || 0
     }
 
-    const hubModel = getInstance('Hub')
-    const articleModel = getInstance('Article')
-    const hubs = new Hubs({
-        hubModel,
-        articleModel,
-        ...data
-    })
-    const tagModel = getInstance('Tag')
+    const hubs = new Hubs(data)
     const tags = new Tags({
-        tagModel,
         limit: TAGS_LIMIT,
         offset: 0
     })
@@ -58,10 +49,14 @@ export const all = async (req, res) => {
                 id: hub.id,
                 name: hub.name,
                 createdAt: hub.createdAt,
-                articles: hub.articles,
+                articles: parseInt(hub.dataValues.articles),
                 tags: {
                     total: tags.total,
-                    data: tags.data
+                    data: tags.data.map(tag => ({
+                        id: tag.id,
+                        name: tag.name,
+                        createdAt: tag.createdAt
+                    }))
                 }
             })
         }
@@ -75,7 +70,7 @@ export const all = async (req, res) => {
             data.offset,
             hubs.total
         ))
-    } catch(error) {
+    } catch (error) {
         res.json(responseBody(
             null,
             'all',

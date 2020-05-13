@@ -1,4 +1,3 @@
-import {getInstance} from "../models";
 import {Stats} from "../models/stats";
 
 const responseBody = (
@@ -17,11 +16,7 @@ const responseBody = (
 })
 
 export const general = async (req, res) => {
-    const articleModel = getInstance('Article')
-    const userModel = getInstance('User')
-    const hubModel = getInstance('Hub')
-    const tagModel = getInstance('Tag')
-    const stats = new Stats({articleModel, userModel, hubModel, tagModel})
+    const stats = new Stats()
 
     try {
         await stats.setData()
@@ -38,32 +33,6 @@ export const general = async (req, res) => {
         res.json(responseBody(
             null,
             'general',
-            500,
-            {
-                source: 'internal',
-                type: 'exception',
-                message: error.message
-            }
-        ))
-    }
-}
-
-export const tags = async (req, res) => {
-    const articleModel = getInstance('Article')
-    const tagModel = getInstance('Tag')
-    const stats = new Stats({articleModel, tagModel})
-
-    try {
-        await stats.setRelatedTags()
-
-        res.json(responseBody(
-            stats.relatedTags,
-            'tags'
-        ))
-    } catch(error) {
-        res.json(responseBody(
-            null,
-            'tags',
             500,
             {
                 source: 'internal',

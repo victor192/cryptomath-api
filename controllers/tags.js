@@ -1,20 +1,19 @@
-import {Funds} from "../models/fund"
-import {randomInt} from "../utils/math";
+import {Tags} from "../models/tag"
 
-const FUNDS_LIMIT = 10
+const TAGS_LIMIT = 15
 
 const responseBody = (
     data,
     endpoint,
     code,
     error = null,
-    limit = FUNDS_LIMIT,
+    limit = TAGS_LIMIT,
     offset = 0,
     total = 0
 ) => ({
     data,
     context: {
-        endpoint: `/funds/${endpoint}`,
+        endpoint: `/tags/${endpoint}`,
         limit,
         offset,
         total,
@@ -26,38 +25,35 @@ const responseBody = (
 
 export const all = async (req, res) => {
     const data = {
-        limit: parseInt(req.query.limit) || FUNDS_LIMIT,
+        limit: parseInt(req.query.limit) || TAGS_LIMIT,
         offset: parseInt(req.query.offset) || 0
     }
 
-    const funds = new Funds(data)
+    const tags = new Tags(data)
 
     try {
-        await funds.setData()
+        await tags.setAll()
 
-        const fundsData = []
+        const tagsData = []
 
-        for (let fund of funds.data) {
-            const fundObject = {
-                id: fund.id,
-                title: fund.title,
-                description: fund.description,
-                createdAt: fund.createdAt,
-                url: fund.url,
-                articles: randomInt(0, 10)
-            }
-
-            fundsData.push(fundObject)
+        for (let tag of tags.data) {
+            tagsData.push({
+                id: tag.id,
+                name: tag.name,
+                hub: tag.hub,
+                createdAt: tag.createdAt,
+                articles: parseInt(tag.dataValues.articles)
+            })
         }
 
         res.json(responseBody(
-            fundsData,
+            tagsData,
             'all',
             200,
             null,
             data.limit,
             data.offset,
-            funds.total
+            tags.total
         ))
     } catch (error) {
         res.json(responseBody(

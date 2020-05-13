@@ -2,9 +2,9 @@ const express = require('express')
 const router = express.Router()
 
 import {
-    general
-} from '../controllers/stats'
+    all
+} from '../controllers/tags'
 
-router.get('/general', general)
+router.get('/all', all)
 
 export default router

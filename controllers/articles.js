@@ -1,13 +1,7 @@
-import {getInstance} from "../models"
 import {Articles} from "../models/article"
-import {User} from "../models/user"
-import {Hubs} from "../models/hub"
-import {Tags} from "../models/tag"
 import {randomInt} from "../utils/math"
 
 const ARTICLES_LIMIT = 10
-const HUBS_LIMIT = 10
-const TAGS_LIMIT = 10
 
 const responseBody = (
     data,
@@ -36,25 +30,7 @@ export const all = async (req, res) => {
         offset: parseInt(req.query.offset) || 0
     }
 
-    const articleModel = getInstance('Article')
-    const articles = new Articles({
-        articleModel,
-        ...data
-    })
-    const userModel = getInstance('User')
-    const user = new User(userModel)
-    const hubModel = getInstance('Hub')
-    const hubs = new Hubs({
-        hubModel,
-        limit: HUBS_LIMIT,
-        offset: 0
-    })
-    const tagModel = getInstance('Tag')
-    const tags = new Tags({
-        tagModel,
-        limit: TAGS_LIMIT,
-        offset: 0
-    })
+    const articles = new Articles(data)
 
     try {
         await articles.setData()
@@ -62,32 +38,29 @@ export const all = async (req, res) => {
         const articlesData = []
 
         for (let article of articles.data) {
-            const userLoaded = await user.get(article.author)
-
-            await hubs.setAllIn(article.hubs)
-            await tags.setAllIn(article.tags)
-
-            if (userLoaded) {
-                const userData = user.data
-                const articleObject = {
-                    id: article.id,
-                    title: article.title,
-                    createdAt: article.createdAt,
-                    stats: {
-                        answers: randomInt(0, 5), // fake
-                        votes: randomInt(-5, 5) // fake
-                    },
-                    author: {
-                        id: userData.id,
-                        displayName: userData.displayName,
-                        hash: userData.hash,
-                    },
-                    hubs: hubs.data,
-                    tags: tags.data
+            articlesData.push({
+                id: article.id,
+                title: article.title,
+                createdAt: article.createdAt,
+                author: {
+                    id: article.User.id,
+                    displayName: article.User.displayName,
+                    hash: article.User.hash
+                },
+                hubs: article.Hubs.map(hub => ({
+                    id: hub.id,
+                    name: hub.name
+                })),
+                tags: article.Tags.map(tag => ({
+                    id: tag.id,
+                    name: tag.name,
+                    hub: tag.hub
+                })),
+                stats: {
+                    answers: randomInt(0, 5), // fake
+                    votes: randomInt(-5, 5) // fake
                 }
-
-                articlesData.push(articleObject)
-            }
+            })
         }
 
         res.json(responseBody(

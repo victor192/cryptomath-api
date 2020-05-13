@@ -28,7 +28,8 @@ export const FundModel = () => {
             }
         }
     }, {
-        tableName: 'funds',
+        freezeTableName: true,
+        tableName: 'Funds',
     })
 }
 

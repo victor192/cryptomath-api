@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken')
 
 import {Captcha} from "../models/captcha"
-import {getInstance} from "../models"
 
 const CAPTCHA_TOKEN_EXPIRES_IN = 15
 
@@ -21,8 +20,7 @@ const responseBody = (
 })
 
 export const generate = async (req, res) => {
-    const model = getInstance('Captcha')
-    const captcha = new Captcha(model)
+    const captcha = new Captcha()
 
     try {
         const loaded = await captcha.setData()
