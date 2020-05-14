@@ -114,12 +114,14 @@ export const ArticleAssociations = (model) => {
 
     model.Hub = model.belongsToMany(hubModel, {
         through: articleHubModel,
-        foreignKey: 'article'
+        foreignKey: 'article',
+        constraints: false
     })
 
     hubModel.Article = hubModel.belongsToMany(model, {
         through: articleHubModel,
-        foreignKey: 'hub'
+        foreignKey: 'hub',
+        constraints: false
     })
 
     //  Article tag associations
@@ -133,12 +135,14 @@ export const ArticleAssociations = (model) => {
 
     model.Tag = model.belongsToMany(tagModel, {
         through: articleTagModel,
-        foreignKey: 'article'
+        foreignKey: 'article',
+        constraints: false
     })
 
     tagModel.Article = tagModel.belongsToMany(model, {
         through: articleTagModel,
-        foreignKey: 'tag'
+        foreignKey: 'tag',
+        constraints: false
     })
 }
 
