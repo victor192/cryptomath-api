@@ -18,6 +18,8 @@ import {
     ArticleHubModel,
     ArticleTagModel,
     ArticleModel,
+    ArticleAnswerModel,
+    ArticleVoteModel
 } from "./article"
 import {
     HubModel,
@@ -58,6 +60,12 @@ const models = [
     },
     {
         create: ArticleTagModel
+    },
+    {
+        create: ArticleAnswerModel
+    },
+    {
+        create: ArticleVoteModel
     }
 ]
 

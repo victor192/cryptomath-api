@@ -57,7 +57,7 @@ export const ArticleHubModel = () => {
     })
 }
 
-export const ArticleTagModel = (model) => {
+export const ArticleTagModel = () => {
     const db = getConnection()
 
     return db.define('ArticleTag', {
@@ -83,9 +83,62 @@ export const ArticleTagModel = (model) => {
     })
 }
 
+export const ArticleAnswerModel = () => {
+    const db = getConnection()
+
+    return db.define('ArticleAnswer', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        article: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        user: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        message: {
+            type: DataTypes.TEXT,
+            allowNull: false
+        },
+    }, {
+        freezeTableName: true,
+        tableName: 'ArticlesAnswers',
+    })
+}
+
+export const ArticleVoteModel = () => {
+    const db = getConnection()
+
+    return db.define('ArticleVote', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
+        article: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        user: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        vote: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        }
+    })
+}
+
 export const ArticleAssociations = (model) => {
     const articleHubModel = getInstance('ArticleHub')
     const articleTagModel = getInstance('ArticleTag')
+    const articleAnswerModel = getInstance('ArticleAnswer')
+    const articleVoteModel = getInstance('ArticleVote')
     const userModel = getInstance('User')
     const hubModel = getInstance('Hub')
     const tagModel = getInstance('Tag')
@@ -100,18 +153,6 @@ export const ArticleAssociations = (model) => {
     })
 
     //  Article hub associations
-    /*model.hasMany(articleHubModel, {
-        foreignKey: 'article'
-    })*/
-
-    /*articleHubModel.Article = articleHubModel.belongsTo(model, {
-        foreignKey: 'article'
-    })
-
-    articleHubModel.Hub = articleHubModel.belongsTo(hubModel, {
-        foreignKey: 'hub',
-    })*/
-
     model.Hub = model.belongsToMany(hubModel, {
         through: articleHubModel,
         foreignKey: 'article',
@@ -125,14 +166,6 @@ export const ArticleAssociations = (model) => {
     })
 
     //  Article tag associations
-    /*articleTagModel.Article = articleTagModel.belongsTo(model, {
-        foreignKey: 'article'
-    })
-
-    articleTagModel.Tag = articleTagModel.belongsTo(tagModel, {
-        foreignKey: 'tag',
-    })*/
-
     model.Tag = model.belongsToMany(tagModel, {
         through: articleTagModel,
         foreignKey: 'article',
@@ -143,6 +176,40 @@ export const ArticleAssociations = (model) => {
         through: articleTagModel,
         foreignKey: 'tag',
         constraints: false
+    })
+
+    //  Article answer associations
+    userModel.ArticleAnswer = userModel.hasOne(articleAnswerModel, {
+        foreignKey: 'id'
+    })
+
+    articleAnswerModel.User = articleAnswerModel.belongsTo(userModel, {
+        foreignKey: 'user'
+    })
+
+    model.Answer = model.hasMany(articleAnswerModel, {
+        foreignKey: 'article'
+    })
+
+    articleAnswerModel.Article = articleAnswerModel.belongsTo(model, {
+        foreignKey: 'id'
+    })
+
+    //  Article vote associations
+    userModel.ArticleVote = userModel.hasOne(articleVoteModel, {
+        foreignKey: 'id'
+    })
+
+    articleVoteModel.User = articleVoteModel.belongsTo(userModel, {
+        foreignKey: 'user'
+    })
+
+    model.Vote = model.hasMany(articleVoteModel, {
+        foreignKey: 'article'
+    })
+
+    articleVoteModel.Article = articleVoteModel.belongsTo(model, {
+        foreignKey: 'id'
     })
 }
 
@@ -195,7 +262,10 @@ export const ArticleTagDefaults = async (model) => {
 
 export class Articles {
     constructor({limit, offset}) {
+        this.db = getConnection()
         this.articleModel = getInstance('Article')
+        this.articleAnswerModel = getInstance('ArticleAnswer')
+        this.articleVoteModel = getInstance('ArticleVote')
         this.userModel = getInstance('User')
         this.hubModel = getInstance('Hub')
         this.tagModel = getInstance('Tag')
@@ -208,26 +278,54 @@ export class Articles {
     async setData() {
         try {
             this.data = await this.articleModel.findAll({
-                attributes: ['id', 'title', 'createdAt'],
-                offset: this.offset,
-                limit: this.limit,
+                attributes: [
+                    'id',
+                    'title',
+                    'createdAt',
+                    [this.db.fn("COUNT", this.db.col("ArticleAnswers.id")), "answers"],
+                    [this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0)), "votes"]
+                ],
                 include: [
                     {
                         model: this.userModel,
+                        duplicating: false,
                         attributes: ['id', 'displayName', 'hash'],
                     },
                     {
                         model: this.hubModel,
+                        duplicating: false,
                         attributes: ['id', 'name']
                     },
                     {
                         model: this.tagModel,
+                        duplicating: false,
                         attributes: ['id', 'name', 'hub']
+                    },
+                    {
+                        model: this.articleAnswerModel,
+                        duplicating: false,
+                        attributes: []
+                    },
+                    {
+                        model: this.articleVoteModel,
+                        duplicating: false,
+                        attributes: []
                     }
+                ],
+                group: [
+                    'Article.id',
+                    'User.email',
+                    'User.id',
+                    'Hubs.id',
+                    'Hubs.ArticleHub.id',
+                    'Tags.id',
+                    'Tags.ArticleTag.id'
                 ],
                 order: [
                     ['createdAt', 'DESC']
-                ]
+                ],
+                offset: this.offset,
+                limit: this.limit
             })
 
             this.total = await this.articleModel.count()

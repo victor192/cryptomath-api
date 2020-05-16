@@ -1,5 +1,4 @@
 import {Articles} from "../models/article"
-import {randomInt} from "../utils/math"
 
 const ARTICLES_LIMIT = 10
 
@@ -56,10 +55,8 @@ export const all = async (req, res) => {
                     name: tag.name,
                     hub: tag.hub
                 })),
-                stats: {
-                    answers: randomInt(0, 5), // fake
-                    votes: randomInt(-5, 5) // fake
-                }
+                answers: parseInt(article.dataValues.answers),
+                votes: parseInt(article.dataValues.votes)
             })
         }
 

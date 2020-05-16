@@ -55,7 +55,8 @@ export const all = async (req, res) => {
                     data: tags.data.map(tag => ({
                         id: tag.id,
                         name: tag.name,
-                        createdAt: tag.createdAt
+                        createdAt: tag.createdAt,
+                        articles: parseInt(tag.dataValues.articles)
                     }))
                 }
             })

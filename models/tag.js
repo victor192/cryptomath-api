@@ -95,24 +95,30 @@ export class Tags {
 
     async setAll() {
         try {
-            this.data = await this.db.query(`SELECT
-                "Tag"."id",
-                "Tag"."name",
-                "Tag"."createdAt",
-                count("Article"."id") AS "articles"
-                    FROM "${this.tagModel.tableName}" AS "Tag" 
-                    LEFT JOIN "${this.articleTagModel.tableName}" AS "ArticleTag" ON "Tag"."id" = "ArticleTag"."tag" 
-                    INNER JOIN "${this.articleModel.tableName}" AS "Article" ON "Article"."id" = "ArticleTag"."article"
-                GROUP BY 
-                    "Tag"."id", 
-                    "Tag"."name", 
-                    "Tag"."createdAt"
-                ORDER BY count("Article"."id") DESC 
-                LIMIT ${this.limit}
-                OFFSET ${this.offset}    
-            `, {
-                model: this.tagModel,
-                type: Sequelize.QueryTypes.SELECT
+            this.data = await this.tagModel.findAll({
+                attributes: [
+                    'id',
+                    'name',
+                    'createdAt',
+                    [this.db.fn("COUNT", this.db.col("Articles.id")), "articles"]
+                ],
+                include: [
+                    {
+                        model: this.articleModel,
+                        duplicating: false,
+                        attributes: [],
+                    }
+                ],
+                group: [
+                    'Tag.id',
+                    'Articles.id',
+                    'Articles.ArticleTag.id'
+                ],
+                order: [
+                    [this.db.fn("COUNT", this.db.col("Articles.id")), 'DESC']
+                ],
+                offset: this.offset,
+                limit: this.limit
             })
 
             this.total = await this.tagModel.count()
@@ -125,25 +131,33 @@ export class Tags {
 
     async setAllInHub(hubId) {
         try {
-            this.data = await this.db.query(`SELECT
-                "Tag"."id",
-                "Tag"."name",
-                "Tag"."createdAt",
-                count("Article"."id") AS "articles"
-                    FROM "${this.tagModel.tableName}" AS "Tag" 
-                    LEFT JOIN "${this.articleTagModel.tableName}" AS "ArticleTag" ON "Tag"."id" = "ArticleTag"."tag" 
-                    INNER JOIN "${this.articleModel.tableName}" AS "Article" ON "Article"."id" = "ArticleTag"."article"
-                WHERE "Tag"."hub" = '${hubId}'
-                GROUP BY 
-                    "Tag"."id", 
-                    "Tag"."name", 
-                    "Tag"."createdAt"
-                ORDER BY count("Article"."id") DESC 
-                LIMIT ${this.limit}
-                OFFSET ${this.offset}    
-            `, {
-                model: this.tagModel,
-                type: Sequelize.QueryTypes.SELECT
+            this.data = await this.tagModel.findAll({
+                attributes: [
+                    'id',
+                    'name',
+                    'createdAt',
+                    [this.db.fn("COUNT", this.db.col("Articles.id")), "articles"]
+                ],
+                include: [
+                    {
+                        model: this.articleModel,
+                        duplicating: false,
+                        attributes: [],
+                    }
+                ],
+                where: {
+                    hub: hubId
+                },
+                group: [
+                    'Tag.id',
+                    'Articles.id',
+                    'Articles.ArticleTag.id'
+                ],
+                order: [
+                    [this.db.fn("COUNT", this.db.col("Articles.id")), 'DESC']
+                ],
+                offset: this.offset,
+                limit: this.limit
             })
 
             this.total = await this.tagModel.count({
