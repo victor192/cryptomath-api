@@ -1,8 +1,12 @@
-const { DataTypes } = require('sequelize')
+const { Sequelize, Op, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
 import {getInstance} from "./index";
 import {articles} from "../tests/articles"
+import {
+    getFilters,
+    getSorts
+} from "./filters";
 
 export const ArticleModel = () => {
     const db = getConnection()
@@ -260,8 +264,46 @@ export const ArticleTagDefaults = async (model) => {
     })
 }
 
+const articlesFields = [
+    {
+        field: 'title',
+        type: 'text',
+        sortable: true
+    },
+    {
+        field: 'author',
+        type: 'id',
+        sortable: true
+    },
+    {
+        field: 'hubs',
+        type: 'ids',
+        sortable: false
+    },
+    {
+        field: 'tags',
+        type: 'ids',
+        sortable: false
+    },
+    {
+        field: 'answers',
+        type: 'numeric',
+        sortable: true
+    },
+    {
+        field: 'votes',
+        type: 'numeric',
+        sortable: true
+    },
+    {
+        field: 'createdAt',
+        type: 'date',
+        sortable: true
+    }
+]
+
 export class Articles {
-    constructor({limit, offset}) {
+    constructor({filters, sorts, limit, offset}) {
         this.db = getConnection()
         this.articleModel = getInstance('Article')
         this.articleAnswerModel = getInstance('ArticleAnswer')
@@ -269,10 +311,111 @@ export class Articles {
         this.userModel = getInstance('User')
         this.hubModel = getInstance('Hub')
         this.tagModel = getInstance('Tag')
+
+        this.filters = filters ? getFilters(articlesFields, filters) : []
+        this.sorts = sorts ? getSorts(articlesFields, sorts) : []
         this.limit = limit
         this.offset = offset
+
         this.data = []
         this.total = 0
+    }
+
+    get cols() {
+        return {
+            answers:  this.db.fn("COUNT", this.db.col("ArticleAnswers.id")),
+            votes: this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0))
+        }
+    }
+
+    get where() {
+        const options = {}
+
+        for (let filter of this.filters) {
+            switch (filter.field) {
+                case 'title':
+                    options.title = {
+                        [Op.iLike]: `%${filter.value}%`
+                    }
+                    break
+                case 'createdAt':
+                    options.createdAt = {
+                        [Op.between]: [filter.start, filter.end]
+                    }
+                    break
+            }
+        }
+
+        return options
+    }
+
+    get userWhere() {
+        const filter = this.filters.find(f => f.field === 'author')
+
+        return {...(filter && {id: filter.id})}
+    }
+
+    get hubWhere() {
+        const filter = this.filters.find(f => f.field === 'hubs')
+
+        return {...(filter && {id: filter.ids})}
+    }
+
+    get tagWhere() {
+        const filter = this.filters.find(f => f.field === 'tags')
+
+        return {...(filter && {id: filter.ids})}
+    }
+
+    get having() {
+        const havings = []
+
+        for (let filter of this.filters) {
+            switch (filter.field) {
+                case 'answers':
+                    havings.push(Sequelize.where(this.cols.answers, {
+                        ...(filter.min && {[Op.gte]: filter.min}),
+                        ...(filter.max && {[Op.lte]: filter.max})
+                    }))
+                    break
+                case 'votes':
+                    havings.push(Sequelize.where(this.cols.votes, {
+                        ...(filter.min && {[Op.gte]: filter.min}),
+                        ...(filter.max && {[Op.lte]: filter.max})
+                    }))
+                    break
+            }
+        }
+
+        return havings
+    }
+
+    get order() {
+        const orders = []
+
+        for (let sort of this.sorts) {
+            switch (sort.field) {
+                case 'title':
+                case 'createdAt':
+                    orders.push([sort.field, sort.direction])
+                    break
+                case 'author':
+                    orders.push([Sequelize.literal('"User"."displayName"'), sort.direction])
+                    break
+                case 'answers':
+                    orders.push([this.cols.answers, sort.direction])
+                    break
+                case 'votes':
+                    orders.push([this.cols.votes, sort.direction])
+                    break
+            }
+        }
+
+        if (orders.length === 0) {
+            orders.push(['createdAt', 'DESC'])
+        }
+
+        return orders
     }
 
     async setData() {
@@ -282,24 +425,27 @@ export class Articles {
                     'id',
                     'title',
                     'createdAt',
-                    [this.db.fn("COUNT", this.db.col("ArticleAnswers.id")), "answers"],
-                    [this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0)), "votes"]
+                    [this.cols.answers, "answers"],
+                    [this.cols.votes, "votes"]
                 ],
                 include: [
                     {
                         model: this.userModel,
                         duplicating: false,
                         attributes: ['id', 'displayName', 'hash'],
+                        where: this.userWhere
                     },
                     {
                         model: this.hubModel,
                         duplicating: false,
-                        attributes: ['id', 'name']
+                        attributes: ['id', 'name'],
+                        where: this.hubWhere
                     },
                     {
                         model: this.tagModel,
                         duplicating: false,
-                        attributes: ['id', 'name', 'hub']
+                        attributes: ['id', 'name', 'hub'],
+                        where: this.tagWhere
                     },
                     {
                         model: this.articleAnswerModel,
@@ -312,6 +458,7 @@ export class Articles {
                         attributes: []
                     }
                 ],
+                where: this.where,
                 group: [
                     'Article.id',
                     'User.email',
@@ -321,9 +468,8 @@ export class Articles {
                     'Tags.id',
                     'Tags.ArticleTag.id'
                 ],
-                order: [
-                    ['createdAt', 'DESC']
-                ],
+                having: this.having,
+                order: this.order,
                 offset: this.offset,
                 limit: this.limit
             })

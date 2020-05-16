@@ -25,8 +25,10 @@ const responseBody = (
 
 export const all = async (req, res) => {
     const data = {
-        limit: parseInt(req.query.limit) || ARTICLES_LIMIT,
-        offset: parseInt(req.query.offset) || 0
+        limit: parseInt(req.body.limit) || ARTICLES_LIMIT,
+        offset: parseInt(req.body.offset) || 0,
+        filters: req.body.filters || false,
+        sorts: req.body.sorts || false
     }
 
     const articles = new Articles(data)
