@@ -19,7 +19,8 @@ import {
     ArticleTagModel,
     ArticleModel,
     ArticleAnswerModel,
-    ArticleVoteModel
+    ArticleVoteModel,
+    ArticleAnswerDefaults
 } from "./article"
 import {
     HubModel,
@@ -112,6 +113,10 @@ const defaults = [
     {
         model: 'ArticleTag',
         create: ArticleTagDefaults
+    },
+    {
+        model: 'ArticleAnswer',
+        create: ArticleAnswerDefaults
     }
 ]
 

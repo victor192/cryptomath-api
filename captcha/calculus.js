@@ -4,7 +4,7 @@ export default  {
     name: 'calculus',
     tasks: [
         {
-            id: 0,
+            id: 1,
             difficulty: 1,
             generate: () => {
                 const b = randomInt(2, 783)

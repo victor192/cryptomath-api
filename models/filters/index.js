@@ -1,10 +1,16 @@
+const { Op } = require("sequelize")
+
 import numericFilter from './numeric';
 import dateFilter from "./date";
 
 export const getFilter = (type, value) => {
     switch (type) {
         case 'text':
-            return {value: String(value)}
+            return {
+                operators: {
+                    [Op.iLike]: `%${String(value)}%`
+                }
+            }
         case 'id':
             return {id: parseInt(value)}
         case 'ids':
@@ -46,9 +52,9 @@ export const getSorts = (fields, values) => {
         const fieldObject = fields.find(f => f.field === value.field)
 
         if (fieldObject && fieldObject.sortable) {
-            const direction = (value.direction === 'asc') ? 'ASC' : 'DESC'
+            const order = (value.order === 'asc') ? 'ASC' : 'DESC'
 
-            sorts.push({field: value.field, direction: direction})
+            sorts.push({field: value.field, order})
         }
     }
 

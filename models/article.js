@@ -1,8 +1,11 @@
-const { Sequelize, Op, DataTypes } = require('sequelize')
+const { Sequelize, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
 import {getInstance} from "./index";
-import {articles} from "../tests/articles"
+import {
+    articles,
+    answers
+} from "../tests/articles"
 import {
     getFilters,
     getSorts
@@ -192,11 +195,13 @@ export const ArticleAssociations = (model) => {
     })
 
     model.Answer = model.hasMany(articleAnswerModel, {
-        foreignKey: 'article'
+        foreignKey: 'article',
+        constraints: false
     })
 
     articleAnswerModel.Article = articleAnswerModel.belongsTo(model, {
-        foreignKey: 'id'
+        foreignKey: 'id',
+        constraints: false
     })
 
     //  Article vote associations
@@ -209,17 +214,19 @@ export const ArticleAssociations = (model) => {
     })
 
     model.Vote = model.hasMany(articleVoteModel, {
-        foreignKey: 'article'
+        foreignKey: 'article',
+        constraints: false
     })
 
     articleVoteModel.Article = articleVoteModel.belongsTo(model, {
-        foreignKey: 'id'
+        foreignKey: 'id',
+        constraints: false
     })
 }
 
 export const ArticleDefaults = async (model) => {
     try {
-        articles.forEach(async (article) => {
+        for (let article of articles) {
             await model.findOrCreate({
                 where: {id: article.id},
                 defaults: {
@@ -230,38 +237,65 @@ export const ArticleDefaults = async (model) => {
                     createdAt: article.createdAt
                 }
             })
-        })
+        }
     } catch (error) {
         throw new Error(error)
     }
 }
 
 export const ArticleHubDefaults = async (model) => {
-    articles.forEach(article => {
-        article.hubs.forEach(async (id) => {
-            await model.findOrCreate({
-                where: {article: article.id, hub: id},
-                defaults: {
-                    article: article.id,
-                    hub: id
-                }
-            })
-        })
-    })
+    try {
+        for (let article of articles) {
+            for (let id of article.hubs) {
+                await model.findOrCreate({
+                    where: {article: article.id, hub: id},
+                    defaults: {
+                        article: article.id,
+                        hub: id
+                    }
+                })
+            }
+        }
+    } catch (error) {
+        throw new Error(error)
+    }
 }
 
 export const ArticleTagDefaults = async (model) => {
-    articles.forEach(article => {
-        article.tags.forEach(async (id) => {
+    try {
+        for (let article of articles) {
+            for (let id of article.tags) {
+                await model.findOrCreate({
+                    where: {article: article.id, tag: id},
+                    defaults: {
+                        article: article.id,
+                        tag: id
+                    }
+                })
+            }
+        }
+    } catch (error) {
+        throw new Error(error)
+    }
+}
+
+export const ArticleAnswerDefaults = async (model) => {
+    try {
+        for (let answer of answers) {
             await model.findOrCreate({
-                where: {article: article.id, tag: id},
+                where: {id: answer.id, article: answer.article},
                 defaults: {
-                    article: article.id,
-                    tag: id
+                    id: answer.id,
+                    article: answer.article,
+                    user: answer.user,
+                    message: answer.message,
+                    createdAt: answer.createdAt
                 }
             })
-        })
-    })
+        }
+    } catch (error) {
+        throw new Error(error)
+    }
 }
 
 const articlesFields = [
@@ -329,24 +363,18 @@ export class Articles {
     }
 
     get where() {
-        const options = {}
+        const wheres = {}
 
         for (let filter of this.filters) {
             switch (filter.field) {
                 case 'title':
-                    options.title = {
-                        [Op.iLike]: `%${filter.value}%`
-                    }
-                    break
                 case 'createdAt':
-                    options.createdAt = {
-                        [Op.between]: [filter.start, filter.end]
-                    }
+                    wheres[filter.field] = filter.operators
                     break
             }
         }
 
-        return options
+        return wheres
     }
 
     get userWhere() {
@@ -373,16 +401,8 @@ export class Articles {
         for (let filter of this.filters) {
             switch (filter.field) {
                 case 'answers':
-                    havings.push(Sequelize.where(this.cols.answers, {
-                        ...(filter.min && {[Op.gte]: filter.min}),
-                        ...(filter.max && {[Op.lte]: filter.max})
-                    }))
-                    break
                 case 'votes':
-                    havings.push(Sequelize.where(this.cols.votes, {
-                        ...(filter.min && {[Op.gte]: filter.min}),
-                        ...(filter.max && {[Op.lte]: filter.max})
-                    }))
+                    havings.push(Sequelize.where(this.cols[filter.field], filter.operators))
                     break
             }
         }
@@ -397,16 +417,16 @@ export class Articles {
             switch (sort.field) {
                 case 'title':
                 case 'createdAt':
-                    orders.push([sort.field, sort.direction])
+                    orders.push([sort.field, sort.order])
                     break
                 case 'author':
-                    orders.push([Sequelize.literal('"User"."displayName"'), sort.direction])
+                    orders.push([this.userModel, 'displayName', sort.order])
                     break
                 case 'answers':
-                    orders.push([this.cols.answers, sort.direction])
+                    orders.push([this.cols.answers, sort.order])
                     break
                 case 'votes':
-                    orders.push([this.cols.votes, sort.direction])
+                    orders.push([this.cols.votes, sort.order])
                     break
             }
         }
@@ -420,7 +440,7 @@ export class Articles {
 
     async setData() {
         try {
-            this.data = await this.articleModel.findAll({
+            const articles = await this.articleModel.findAndCountAll({
                 attributes: [
                     'id',
                     'title',
@@ -474,7 +494,8 @@ export class Articles {
                 limit: this.limit
             })
 
-            this.total = await this.articleModel.count()
+            this.data = articles.rows
+            this.total = articles.count
 
             return true
         } catch (error) {

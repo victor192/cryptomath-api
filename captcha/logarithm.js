@@ -4,7 +4,7 @@ export default {
     name: 'logarithm',
     tasks: [
         {
-            id: 0,
+            id: 1,
             difficulty: 2,
             generate: () => {
                 const p = randomInt(3, 23)

@@ -1,19 +1,28 @@
+const { Op } = require("sequelize")
+
 const dateFilter = (value) => {
-    const filter = {}
+    const operators = {}
 
-    if (value.start) {
-        filter.start = new Date(value.start)
+    if (value.equals) {
+        operators[Op.eq] = new Date(value.equals)
+    }
+    else if (value.start && !value.end) {
+        operators[Op.gte] = new Date(value.start)
+    }
+    else if (!value.start && value.end) {
+        operators[Op.lte] = new Date(value.end)
+    }
+    else if (value.start && value.end) {
+        operators[Op.between] = [
+            new Date(value.start),
+            new Date(value.end)
+        ]
+    }
+    else {
+        return false
     }
 
-    if (value.end) {
-        filter.end = new Date(value.end)
-    }
-
-    if (filter.start || filter.end) {
-        return filter
-    }
-
-    return false
+    return {operators}
 }
 
 export default dateFilter

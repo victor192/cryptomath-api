@@ -4,7 +4,7 @@ export default {
     name: 'limit',
     tasks: [
         {
-            id: 0,
+            id: 1,
             difficulty: 1,
             generate: () => {
                 const m = randomInt(2, 1024)
@@ -13,10 +13,10 @@ export default {
                 return [m, n]
             },
             math: (m, n) => String.raw`\lim_{x \to 1} \frac{\sqrt[${m}]{x} - 1}{\sqrt[${n}]{x} - 1}`,
-            answer: (m, n) => parseInt(n / m)
+            answer: (m, n) => Math.floor(n / m)
         },
         {
-            id: 1,
+            id: 2,
             difficulty: 2,
             generate: () => {
                 const b = randomInt(1, 99)
@@ -32,7 +32,7 @@ export default {
             answer: (a, b) => a - b
         },
         {
-            id: 2,
+            id: 3,
             difficulty: 2,
             generate: () => {
                 const b = randomInt(1, 12)
@@ -44,7 +44,7 @@ export default {
             answer: (a, b) => Math.pow(b, 2) - Math.pow(a, 2)
         },
         {
-            id: 3,
+            id: 4,
             difficulty: 2,
             generate: () => {
                 const a = randomInt(3, 41)

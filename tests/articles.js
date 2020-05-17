@@ -45,3 +45,27 @@ export const articles = [
         createdAt: '2020-05-09 12:11:42.528+03'
     }
 ]
+
+export const answers = [
+    {
+        id: 1,
+        article: 1,
+        user: 1,
+        message: String.raw`12345`,
+        createdAt: '2020-05-10 12:11:42.528+03'
+    },
+    {
+        id: 2,
+        article: 2,
+        user: 1,
+        message: String.raw`qwerty 998877665544332211`,
+        createdAt: '2020-05-10 12:12:42.528+03'
+    },
+    {
+        id: 3,
+        article: 2,
+        user: 1,
+        message: String.raw`54321`,
+        createdAt: '2020-05-10 13:12:42.528+03'
+    }
+]
