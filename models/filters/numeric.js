@@ -26,7 +26,7 @@ const numericFilter = (value) => {
         return false
     }
 
-    return {operators}
+    return operators
 }
 
 export default numericFilter

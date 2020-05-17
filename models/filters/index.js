@@ -1,5 +1,4 @@
-const { Op } = require("sequelize")
-
+import { Op } from "sequelize";
 import numericFilter from './numeric';
 import dateFilter from "./date";
 
@@ -7,9 +6,7 @@ export const getFilter = (type, value) => {
     switch (type) {
         case 'text':
             return {
-                operators: {
-                    [Op.iLike]: `%${String(value)}%`
-                }
+                [Op.iLike]: `%${String(value)}%`
             }
         case 'id':
             return {id: parseInt(value)}
@@ -28,16 +25,16 @@ export const getFilter = (type, value) => {
 }
 
 export const getFilters = (fields, values) => {
-    const filters = []
+    const filters = {}
 
     for (let [field, value] of Object.entries(values)) {
         const fieldObject = fields.find(f => f.field === field)
 
-        if (fieldObject) {
-            const filter = getFilter(fieldObject.type, value)
+        if (fieldObject && fieldObject.filter) {
+            const filter = getFilter(fieldObject.filter, value)
 
             if (filter) {
-                filters.push({field: fieldObject.field, ...filter})
+                filters[fieldObject.field] = filter
             }
         }
     }
@@ -46,15 +43,15 @@ export const getFilters = (fields, values) => {
 }
 
 export const getSorts = (fields, values) => {
-    const sorts = []
+    const sorts = {}
 
-    for (let value of values) {
-        const fieldObject = fields.find(f => f.field === value.field)
+    for (let [field, order] of Object.entries(values)) {
+        const fieldObject = fields.find(f => f.field === field)
 
         if (fieldObject && fieldObject.sortable) {
-            const order = (value.order === 'asc') ? 'ASC' : 'DESC'
+            const direction = (order === 'asc') ? 'ASC' : 'DESC'
 
-            sorts.push({field: value.field, order})
+            sorts[fieldObject.field] = direction
         }
     }
 

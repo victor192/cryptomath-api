@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes } = require('sequelize')
+import { Sequelize, Op, DataTypes } from "sequelize";
 
 import {getConnection} from "../core/database"
 import {getInstance} from "./index";
@@ -34,7 +34,7 @@ export const ArticleModel = () => {
         },
     }, {
         freezeTableName: true,
-        tableName: 'Articles',
+        tableName: 'Articles'
     })
 }
 
@@ -155,6 +155,7 @@ export const ArticleAssociations = (model) => {
         foreignKey: 'id'
     })
 
+    //  User article associations
     model.User = model.belongsTo(userModel, {
         foreignKey: 'author'
     })
@@ -166,6 +167,7 @@ export const ArticleAssociations = (model) => {
         constraints: false
     })
 
+    //  Hub article associations
     hubModel.Article = hubModel.belongsToMany(model, {
         through: articleHubModel,
         foreignKey: 'hub',
@@ -179,6 +181,7 @@ export const ArticleAssociations = (model) => {
         constraints: false
     })
 
+    //  Tag article model
     tagModel.Article = tagModel.belongsToMany(model, {
         through: articleTagModel,
         foreignKey: 'tag',
@@ -301,37 +304,37 @@ export const ArticleAnswerDefaults = async (model) => {
 const articlesFields = [
     {
         field: 'title',
-        type: 'text',
+        filter: 'text',
         sortable: true
     },
     {
         field: 'author',
-        type: 'id',
+        filter: 'id',
         sortable: true
     },
     {
         field: 'hubs',
-        type: 'ids',
+        filter: 'ids',
         sortable: false
     },
     {
         field: 'tags',
-        type: 'ids',
+        filter: 'ids',
         sortable: false
     },
     {
         field: 'answers',
-        type: 'numeric',
+        filter: false,
         sortable: true
     },
     {
         field: 'votes',
-        type: 'numeric',
+        filter: false,
         sortable: true
     },
     {
         field: 'createdAt',
-        type: 'date',
+        filter: 'date',
         sortable: true
     }
 ]
@@ -346,8 +349,8 @@ export class Articles {
         this.hubModel = getInstance('Hub')
         this.tagModel = getInstance('Tag')
 
-        this.filters = filters ? getFilters(articlesFields, filters) : []
-        this.sorts = sorts ? getSorts(articlesFields, sorts) : []
+        this.filters = filters ? getFilters(articlesFields, filters) : {}
+        this.sorts = sorts ? getSorts(articlesFields, sorts) : {}
         this.limit = limit
         this.offset = offset
 
@@ -358,81 +361,79 @@ export class Articles {
     get cols() {
         return {
             answers:  this.db.fn("COUNT", this.db.col("ArticleAnswers.id")),
-            votes: this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0))
+            votes: this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0)),
+            createdAt: this.db.col("Article.createdAt")
         }
     }
 
     get where() {
         const wheres = {}
 
-        for (let filter of this.filters) {
-            switch (filter.field) {
-                case 'title':
-                case 'createdAt':
-                    wheres[filter.field] = filter.operators
-                    break
-            }
+        if (this.filters.title) {
+            wheres.title = this.filters.title
+        }
+
+        if (this.filters.createdAt) {
+            wheres[Op.and] = Sequelize.where(Sequelize.fn('DATE', this.cols.createdAt), this.filters.createdAt)
         }
 
         return wheres
     }
 
     get userWhere() {
-        const filter = this.filters.find(f => f.field === 'author')
+        const wheres = {}
 
-        return {...(filter && {id: filter.id})}
+        if (this.filters.author) {
+            wheres.id = this.filters.author.id
+        }
+
+        return wheres
     }
 
     get hubWhere() {
-        const filter = this.filters.find(f => f.field === 'hubs')
+        const wheres = {}
 
-        return {...(filter && {id: filter.ids})}
+        if (this.filters.hubs) {
+            wheres.id = this.filters.hubs.ids
+        }
+
+        return wheres
     }
 
     get tagWhere() {
-        const filter = this.filters.find(f => f.field === 'tags')
+        const wheres = {}
 
-        return {...(filter && {id: filter.ids})}
-    }
-
-    get having() {
-        const havings = []
-
-        for (let filter of this.filters) {
-            switch (filter.field) {
-                case 'answers':
-                case 'votes':
-                    havings.push(Sequelize.where(this.cols[filter.field], filter.operators))
-                    break
-            }
+        if (this.filters.tags) {
+            wheres.id = this.filters.tags.ids
         }
 
-        return havings
+        return wheres
     }
 
     get order() {
         const orders = []
 
-        for (let sort of this.sorts) {
-            switch (sort.field) {
-                case 'title':
-                case 'createdAt':
-                    orders.push([sort.field, sort.order])
-                    break
-                case 'author':
-                    orders.push([this.userModel, 'displayName', sort.order])
-                    break
-                case 'answers':
-                    orders.push([this.cols.answers, sort.order])
-                    break
-                case 'votes':
-                    orders.push([this.cols.votes, sort.order])
-                    break
-            }
+        if (this.sorts.title) {
+            orders.push(['title', this.sorts.title])
         }
 
-        if (orders.length === 0) {
-            orders.push(['createdAt', 'DESC'])
+        if (this.sorts.author) {
+            orders.push([this.userModel, 'displayName', this.sorts.author])
+        }
+
+        if (this.sorts.answers) {
+            orders.push([this.cols.answers, this.sorts.answers])
+        }
+
+        if (this.sorts.votes) {
+            orders.push([this.cols.votes, this.sorts.votes])
+        }
+
+        if (this.sorts.createdAt) {
+            orders.push([this.cols.createdAt, this.sorts.createdAt])
+        }
+        else {
+            orders.push([this.cols.createdAt, 'DESC'])
         }
 
         return orders
@@ -440,42 +441,43 @@ export class Articles {
 
     async setData() {
         try {
-            const articles = await this.articleModel.findAndCountAll({
+            this.data = await this.articleModel.findAll({
                 attributes: [
                     'id',
                     'title',
-                    'createdAt',
+                    [this.cols.createdAt, "createdAt"],
                     [this.cols.answers, "answers"],
                     [this.cols.votes, "votes"]
                 ],
+                distinct: true,
                 include: [
                     {
                         model: this.userModel,
                         duplicating: false,
                         attributes: ['id', 'displayName', 'hash'],
-                        where: this.userWhere
+                        where: this.userWhere,
                     },
                     {
                         model: this.hubModel,
                         duplicating: false,
                         attributes: ['id', 'name'],
-                        where: this.hubWhere
+                        where: this.hubWhere,
                     },
                     {
                         model: this.tagModel,
                         duplicating: false,
                         attributes: ['id', 'name', 'hub'],
-                        where: this.tagWhere
+                        where: this.tagWhere,
                     },
                     {
                         model: this.articleAnswerModel,
                         duplicating: false,
-                        attributes: []
+                        attributes: [],
                     },
                     {
                         model: this.articleVoteModel,
                         duplicating: false,
-                        attributes: []
+                        attributes: [],
                     }
                 ],
                 where: this.where,
@@ -488,14 +490,45 @@ export class Articles {
                     'Tags.id',
                     'Tags.ArticleTag.id'
                 ],
-                having: this.having,
                 order: this.order,
                 offset: this.offset,
                 limit: this.limit
             })
 
-            this.data = articles.rows
-            this.total = articles.count
+            this.total = await this.articleModel.count({
+                distinct: true,
+                include: [
+                    {
+                        model: this.userModel,
+                        duplicating: false,
+                        attributes: ['id', 'displayName', 'hash'],
+                        where: this.userWhere,
+                    },
+                    {
+                        model: this.hubModel,
+                        duplicating: false,
+                        attributes: ['id', 'name'],
+                        where: this.hubWhere,
+                    },
+                    {
+                        model: this.tagModel,
+                        duplicating: false,
+                        attributes: ['id', 'name', 'hub'],
+                        where: this.tagWhere,
+                    },
+                    {
+                        model: this.articleAnswerModel,
+                        duplicating: false,
+                        attributes: []
+                    },
+                    {
+                        model: this.articleVoteModel,
+                        duplicating: false,
+                        attributes: [],
+                    }
+                ],
+                where: this.where,
+            })
 
             return true
         } catch (error) {

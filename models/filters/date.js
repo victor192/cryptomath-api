@@ -1,28 +1,40 @@
-const { Op } = require("sequelize")
+import { Op } from "sequelize";
+import isValid from 'date-fns/isValid'
+import formatISO from 'date-fns/formatISO'
+
+const parseDatabaseDate = (value) => {
+    const date = new Date(value)
+
+    if (isValid(date)) {
+        return formatISO(date, { representation: 'date' })
+    }
+
+    return false
+}
 
 const dateFilter = (value) => {
     const operators = {}
+    const equals = value.equals ? parseDatabaseDate(value.equals) : false
+    const start = value.start ? parseDatabaseDate(value.start) : false
+    const end = value.end ? parseDatabaseDate(value.end) : false
 
-    if (value.equals) {
-        operators[Op.eq] = new Date(value.equals)
+    if (equals) {
+        operators[Op.eq] = equals
     }
-    else if (value.start && !value.end) {
-        operators[Op.gte] = new Date(value.start)
+    else if (start && !end) {
+        operators[Op.gte] = start
     }
-    else if (!value.start && value.end) {
-        operators[Op.lte] = new Date(value.end)
+    else if (!start && end) {
+        operators[Op.lte] = end
     }
-    else if (value.start && value.end) {
-        operators[Op.between] = [
-            new Date(value.start),
-            new Date(value.end)
-        ]
+    else if (start && end) {
+        operators[Op.between] = [start, end]
     }
     else {
         return false
     }
 
-    return {operators}
+    return operators
 }
 
 export default dateFilter
