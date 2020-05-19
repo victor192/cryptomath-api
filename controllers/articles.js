@@ -36,34 +36,8 @@ export const all = async (req, res) => {
     try {
         await articles.setData()
 
-        const articlesData = []
-
-        for (let article of articles.data) {
-            articlesData.push({
-                id: article.id,
-                title: article.title,
-                createdAt: article.createdAt,
-                author: {
-                    id: article.User.id,
-                    displayName: article.User.displayName,
-                    hash: article.User.hash
-                },
-                hubs: article.Hubs.map(hub => ({
-                    id: hub.id,
-                    name: hub.name
-                })),
-                tags: article.Tags.map(tag => ({
-                    id: tag.id,
-                    name: tag.name,
-                    hub: tag.hub
-                })),
-                answers: parseInt(article.dataValues.answers),
-                votes: parseInt(article.dataValues.votes)
-            })
-        }
-
         res.json(responseBody(
-            articlesData,
+            articles.data,
             'all',
             200,
             null,

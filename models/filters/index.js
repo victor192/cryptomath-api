@@ -1,20 +1,17 @@
-import { Op } from "sequelize";
+import textFilter from "./text";
+import idFilter from "./id";
+import idsFilter from "./ids";
 import numericFilter from './numeric';
 import dateFilter from "./date";
 
 export const getFilter = (type, value) => {
     switch (type) {
         case 'text':
-            return {
-                [Op.iLike]: `%${String(value)}%`
-            }
+            return textFilter(value)
         case 'id':
-            return {id: parseInt(value)}
+            return idFilter(value)
         case 'ids':
-            if (Array.isArray(value)) {
-                return {ids: value.map(id => parseInt(id))}
-            }
-            break
+            return idsFilter(value)
         case 'numeric':
             return numericFilter(value)
         case 'date':

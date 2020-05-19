@@ -1,4 +1,4 @@
-import { Sequelize, Op, DataTypes } from "sequelize";
+import { DataTypes, QueryTypes } from "sequelize";
 
 import {getConnection} from "../core/database"
 import {getInstance} from "./index";
@@ -10,6 +10,11 @@ import {
     getFilters,
     getSorts
 } from "./filters";
+import {
+    prepareWhere,
+    prepareOrder,
+    prepareQuery
+} from "../utils/queries";
 
 export const ArticleModel = () => {
     const db = getConnection()
@@ -138,6 +143,9 @@ export const ArticleVoteModel = () => {
             type: DataTypes.INTEGER,
             allowNull: false
         }
+    }, {
+        freezeTableName: true,
+        tableName: 'ArticlesVotes',
     })
 }
 
@@ -324,12 +332,12 @@ const articlesFields = [
     },
     {
         field: 'answers',
-        filter: false,
+        filter: 'numeric',
         sortable: true
     },
     {
         field: 'votes',
-        filter: false,
+        filter: 'numeric',
         sortable: true
     },
     {
@@ -343,6 +351,8 @@ export class Articles {
     constructor({filters, sorts, limit, offset}) {
         this.db = getConnection()
         this.articleModel = getInstance('Article')
+        this.articleHubModel = getInstance('ArticleHub')
+        this.articleTagModel = getInstance('ArticleTag')
         this.articleAnswerModel = getInstance('ArticleAnswer')
         this.articleVoteModel = getInstance('ArticleVote')
         this.userModel = getInstance('User')
@@ -354,180 +364,292 @@ export class Articles {
         this.limit = limit
         this.offset = offset
 
-        this.data = []
-        this.total = 0
+        this.dataProxy = []
+        this.totalProxy = 0
     }
 
     get cols() {
         return {
-            answers:  this.db.fn("COUNT", this.db.col("ArticleAnswers.id")),
-            votes: this.db.fn("SUM", this.db.fn('COALESCE', this.db.col("ArticleVotes.vote"), 0)),
-            createdAt: this.db.col("Article.createdAt")
+            id: '"Article"."id"',
+            title: '"Article"."title"',
+            createdAt: '"Article"."createdAt"',
+            author: '"Article"."author"',
+            user: {
+                id: '"User"."id"',
+                email: '"User"."email"',
+                displayName: '"User"."displayName"',
+                hash: '"User"."hash"'
+            },
+            hub: {
+                id: '"Hub"."id"',
+                name: '"Hub"."name"'
+            },
+            tag: {
+                id: '"Tag"."id"',
+                name: '"Tag"."name"',
+                hub: '"Tag"."hub"'
+            },
+            count: 'COUNT(DISTINCT("Article"."id"))',
+            answers: 'COUNT(DISTINCT("ArticleAnswer"."id"))',
+            votes: 'COALESCE(SUM("ArticleVote"."vote"), 0)'
         }
     }
 
     get where() {
-        const wheres = {}
+        const wheres = []
 
         if (this.filters.title) {
-            wheres.title = this.filters.title
+            wheres.push({
+                column: this.cols.title,
+                filter: this.filters.title
+            })
         }
 
         if (this.filters.createdAt) {
-            wheres[Op.and] = Sequelize.where(Sequelize.fn('DATE', this.cols.createdAt), this.filters.createdAt)
+            wheres.push({
+                column: `DATE(${this.cols.createdAt})`,
+                filter: this.filters.createdAt
+            })
         }
 
-        return wheres
+        return prepareWhere(wheres)
     }
 
     get userWhere() {
-        const wheres = {}
+        const wheres = []
 
         if (this.filters.author) {
-            wheres.id = this.filters.author.id
+            wheres.push({
+                column: this.cols.user.id,
+                filter: this.filters.author
+            })
         }
 
-        return wheres
+        return prepareWhere(wheres, true)
     }
 
     get hubWhere() {
-        const wheres = {}
+        const wheres = []
 
         if (this.filters.hubs) {
-            wheres.id = this.filters.hubs.ids
+            wheres.push({
+                column: this.cols.hub.id,
+                filter: this.filters.hubs
+            })
         }
 
-        return wheres
+        return prepareWhere(wheres, true)
     }
 
     get tagWhere() {
-        const wheres = {}
+        const wheres = []
 
         if (this.filters.tags) {
-            wheres.id = this.filters.tags.ids
+            wheres.push({
+                column: this.cols.tag.id,
+                filter: this.filters.tags
+            })
         }
 
-        return wheres
+        return prepareWhere(wheres, true)
+    }
+
+    get having() {
+        const havings = []
+
+        if (this.filters.answers) {
+            havings.push({
+                column: this.cols.answers,
+                filter: this.filters.answers
+            })
+        }
+
+        if (this.filters.votes) {
+            havings.push({
+                column: this.cols.votes,
+                filter: this.filters.votes
+            })
+        }
+
+        return prepareWhere(havings)
     }
 
     get order() {
         const orders = []
 
         if (this.sorts.title) {
-            orders.push(['title', this.sorts.title])
+            orders.push({
+                column: this.cols.title,
+                direction: this.sorts.title
+            })
         }
 
         if (this.sorts.author) {
-            orders.push([this.userModel, 'displayName', this.sorts.author])
+            orders.push({
+                column: this.cols.user.displayName,
+                direction: this.sorts.author
+            })
         }
 
         if (this.sorts.answers) {
-            orders.push([this.cols.answers, this.sorts.answers])
+            orders.push({
+                column: this.cols.answers,
+                direction: this.sorts.answers
+            })
         }
 
         if (this.sorts.votes) {
-            orders.push([this.cols.votes, this.sorts.votes])
+            orders.push({
+                column: this.cols.votes,
+                direction: this.sorts.votes
+            })
         }
 
         if (this.sorts.createdAt) {
-            orders.push([this.cols.createdAt, this.sorts.createdAt])
+            orders.push({
+                column: this.cols.createdAt,
+                direction: this.sorts.createdAt
+            })
         }
         else {
-            orders.push([this.cols.createdAt, 'DESC'])
+            orders.push({
+                column: this.cols.createdAt,
+                direction: 'DESC'
+            })
         }
 
-        return orders
+        return prepareOrder(orders)
+    }
+
+    get data() {
+        return this.dataProxy
+    }
+
+    set data(articlesRaw) {
+        const articles = []
+
+        for (let article of articlesRaw) {
+            const articleId = article.id
+            const dataValues = article.dataValues
+            const hub = {
+                id: dataValues['Hub.id'],
+                name: dataValues['Hub.name']
+            }
+            const tag = {
+                id: dataValues['Tag.id'],
+                name: dataValues['Tag.name'],
+                hub: dataValues['Tag.hub']
+            }
+
+            const articleObject = articles.find(a => a.id === articleId)
+
+            if (articleObject) {
+                const hasHub = articleObject.hubs.some(h => h.id === hub.id)
+                const hasTag = articleObject.tags.some(t => t.id === tag.id)
+
+                if (!hasHub) {
+                    articleObject.hubs.push(hub)
+                }
+
+                if (!hasTag) {
+                    articleObject.tags.push(tag)
+                }
+            }
+            else {
+                const newArticleObject = {
+                    id: article.id,
+                    title: article.title,
+                    createdAt: article.createdAt,
+                    author: {
+                        id: dataValues['User.id'],
+                        displayName: dataValues['User.displayName'],
+                        hash: dataValues['User.hash']
+                    },
+                    hubs: [hub],
+                    tags: [tag],
+                    answers: parseInt(dataValues.answers),
+                    votes: parseInt(dataValues.votes)
+                }
+
+                articles.push(newArticleObject)
+            }
+        }
+
+        this.dataProxy = articles
+    }
+
+    get total() {
+        return this.totalProxy
+    }
+
+    set total(totalRaw) {
+        if (totalRaw.length > 0) {
+            const dataValues = totalRaw[0].dataValues
+
+            this.totalProxy = parseInt(dataValues.total)
+        }
     }
 
     async setData() {
         try {
-            this.data = await this.articleModel.findAll({
-                attributes: [
-                    'id',
-                    'title',
-                    [this.cols.createdAt, "createdAt"],
-                    [this.cols.answers, "answers"],
-                    [this.cols.votes, "votes"]
-                ],
-                distinct: true,
-                include: [
-                    {
-                        model: this.userModel,
-                        duplicating: false,
-                        attributes: ['id', 'displayName', 'hash'],
-                        where: this.userWhere,
-                    },
-                    {
-                        model: this.hubModel,
-                        duplicating: false,
-                        attributes: ['id', 'name'],
-                        where: this.hubWhere,
-                    },
-                    {
-                        model: this.tagModel,
-                        duplicating: false,
-                        attributes: ['id', 'name', 'hub'],
-                        where: this.tagWhere,
-                    },
-                    {
-                        model: this.articleAnswerModel,
-                        duplicating: false,
-                        attributes: [],
-                    },
-                    {
-                        model: this.articleVoteModel,
-                        duplicating: false,
-                        attributes: [],
-                    }
-                ],
-                where: this.where,
-                group: [
-                    'Article.id',
-                    'User.email',
-                    'User.id',
-                    'Hubs.id',
-                    'Hubs.ArticleHub.id',
-                    'Tags.id',
-                    'Tags.ArticleTag.id'
-                ],
-                order: this.order,
-                offset: this.offset,
-                limit: this.limit
+            this.data = await this.db.query(prepareQuery(`
+                SELECT DISTINCT
+                    ${this.cols.id},
+                    ${this.cols.title},
+                    ${this.cols.createdAt},
+                    ${this.cols.user.id} AS "User.id",
+                    ${this.cols.user.displayName} AS "User.displayName",
+                    ${this.cols.user.hash} AS "User.hash",
+                    ${this.cols.hub.id} AS "Hub.id",
+                    ${this.cols.hub.name} AS "Hub.name",
+                    ${this.cols.tag.id} AS "Tag.id",
+                    ${this.cols.tag.name} AS "Tag.name",
+                    ${this.cols.tag.hub} AS "Tag.hub",
+                    ${this.cols.answers} AS "answers",
+                    ${this.cols.votes} AS "votes"
+                    FROM "${this.articleModel.tableName}" AS "Article"
+                    INNER JOIN "${this.userModel.tableName}" AS "User" ON ${this.cols.author} = ${this.cols.user.id} ${this.userWhere}
+                    INNER JOIN ("${this.articleHubModel.tableName}" AS "ArticleHub" 
+                        INNER JOIN "${this.hubModel.tableName}" AS "Hub" ON ${this.cols.hub.id} = "ArticleHub"."hub") ON ${this.cols.id} = "ArticleHub"."article" ${this.hubWhere}
+                    INNER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag" 
+                        INNER JOIN "${this.tagModel.tableName}" AS "Tag" ON ${this.cols.tag.id} = "ArticleTag"."tag") ON ${this.cols.id} = "ArticleTag"."article" ${this.tagWhere}
+                    LEFT OUTER JOIN "${this.articleAnswerModel.tableName}" AS "ArticleAnswer" ON ${this.cols.id} = "ArticleAnswer"."article" 
+                    LEFT OUTER JOIN "${this.articleVoteModel.tableName}" AS "ArticleVote" ON ${this.cols.id} = "ArticleVote"."article"
+                    WHERE ${this.where}
+                    GROUP BY
+                        ${this.cols.id},
+                        ${this.cols.user.id},
+                        ${this.cols.user.email},
+                        ${this.cols.hub.id},
+                        "ArticleHub"."id",
+                        ${this.cols.tag.id},
+                        "ArticleTag"."id"
+                    HAVING ${this.having}    
+                    ORDER BY ${this.order}
+                    OFFSET ${this.offset}
+                    LIMIT ${this.limit}    
+            `), {
+                model: this.articleModel,
+                type: QueryTypes.SELECT
             })
 
-            this.total = await this.articleModel.count({
-                distinct: true,
-                include: [
-                    {
-                        model: this.userModel,
-                        duplicating: false,
-                        attributes: ['id', 'displayName', 'hash'],
-                        where: this.userWhere,
-                    },
-                    {
-                        model: this.hubModel,
-                        duplicating: false,
-                        attributes: ['id', 'name'],
-                        where: this.hubWhere,
-                    },
-                    {
-                        model: this.tagModel,
-                        duplicating: false,
-                        attributes: ['id', 'name', 'hub'],
-                        where: this.tagWhere,
-                    },
-                    {
-                        model: this.articleAnswerModel,
-                        duplicating: false,
-                        attributes: []
-                    },
-                    {
-                        model: this.articleVoteModel,
-                        duplicating: false,
-                        attributes: [],
-                    }
-                ],
-                where: this.where,
+            this.total = await this.db.query(prepareQuery(`
+                SELECT 
+                    ${this.cols.count} AS "total"
+                    FROM "${this.articleModel.tableName}" AS "Article"
+                    INNER JOIN "${this.userModel.tableName}" AS "User" ON ${this.cols.author} = ${this.cols.user.id} ${this.userWhere}
+                    INNER JOIN ("${this.articleHubModel.tableName}" AS "ArticleHub" INNER JOIN "${this.hubModel.tableName}" AS "Hub" ON ${this.cols.hub.id} = "ArticleHub"."hub") ON ${this.cols.id} = "ArticleHub"."article" ${this.hubWhere}
+                    INNER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag" INNER JOIN "${this.tagModel.tableName}" AS "Tag" ON ${this.cols.tag.id} = "ArticleTag"."tag") ON ${this.cols.id} = "ArticleTag"."article" ${this.tagWhere}
+                    INNER JOIN (SELECT DISTINCT ${this.cols.id} FROM "${this.articleModel.tableName}" AS "Article"
+                        LEFT OUTER JOIN "${this.articleAnswerModel.tableName}" AS "ArticleAnswer" ON ${this.cols.id} = "ArticleAnswer"."article" 
+                        LEFT OUTER JOIN "${this.articleVoteModel.tableName}" AS "ArticleVote" ON ${this.cols.id} = "ArticleVote"."article"
+                        GROUP BY ${this.cols.id}
+                        HAVING ${this.having}
+                    ) AS "ArticlesAnswerVote" ON ${this.cols.id} = "ArticlesAnswerVote"."id"
+                    WHERE ${this.where};
+            `), {
+                model: this.articleModel,
+                type: QueryTypes.SELECT
             })
 
             return true

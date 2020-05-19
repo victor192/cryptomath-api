@@ -1,32 +1,35 @@
-const { Op } = require("sequelize")
-
 const numericFilter = (value) => {
-    const operators = {}
+    const equals = value.equals ? parseInt(value.equals) : false
+    const min = value.min ? parseInt(value.min) : false
+    const max = value.max ? parseInt(value.max) : false
 
-    if (value.equals) {
-        operators[Op.eq] = parseInt(value.equals)
+    if (equals) {
+        return {
+            equals,
+            operation: `= ${equals.toString()}`
+        }
     }
-    else if (value.min && !value.max) {
-        operators[Op.gte] = parseInt(value.min)
+    else if (min && !max) {
+        return {
+            min,
+            operation: `>= ${min.toString()}`
+        }
     }
-    else if (!value.min && value.max) {
-        operators[Op.lte] = parseInt(value.max)
+    else if (!min && max) {
+        return {
+            max,
+            operation: `<= ${max.toString()}`
+        }
     }
-    else if (value.min && value.max) {
-        operators[Op.and]  = [
-            {
-                [Op.gte]: parseInt(value.min)
-            },
-            {
-                [Op.lte]: parseInt(value.max)
-            }
-        ]
-    }
-    else {
-        return false
+    else if (min && max) {
+        return {
+            min,
+            max,
+            operation: `BETWEEN ${min.toString()} AND ${max.toString()}`,
+        }
     }
 
-    return operators
+    return false
 }
 
 export default numericFilter
