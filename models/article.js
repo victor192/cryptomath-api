@@ -7,14 +7,11 @@ import {
     answers
 } from "../tests/articles"
 import {
-    getFilters,
-    getSorts
-} from "./filters";
-import {
     prepareWhere,
     prepareOrder,
     prepareQuery
 } from "../utils/queries";
+import {FilteredList} from "./mixins";
 
 export const ArticleModel = () => {
     const db = getConnection()
@@ -311,6 +308,11 @@ export const ArticleAnswerDefaults = async (model) => {
 
 const articlesFields = [
     {
+        field: 'id',
+        filter: 'id',
+        sortable: false
+    },
+    {
         field: 'title',
         filter: 'text',
         sortable: true
@@ -347,9 +349,16 @@ const articlesFields = [
     }
 ]
 
-export class Articles {
+export class Articles extends FilteredList {
     constructor({filters, sorts, limit, offset}) {
-        this.db = getConnection()
+        super({
+            fields: articlesFields,
+            filters,
+            sorts,
+            limit,
+            offset
+        })
+
         this.articleModel = getInstance('Article')
         this.articleHubModel = getInstance('ArticleHub')
         this.articleTagModel = getInstance('ArticleTag')
@@ -358,14 +367,6 @@ export class Articles {
         this.userModel = getInstance('User')
         this.hubModel = getInstance('Hub')
         this.tagModel = getInstance('Tag')
-
-        this.filters = filters ? getFilters(articlesFields, filters) : {}
-        this.sorts = sorts ? getSorts(articlesFields, sorts) : {}
-        this.limit = limit
-        this.offset = offset
-
-        this.dataProxy = []
-        this.totalProxy = 0
     }
 
     get cols() {
@@ -397,6 +398,13 @@ export class Articles {
 
     get where() {
         const wheres = []
+
+        if (this.filters.id) {
+            wheres.push({
+                column: this.cols.id,
+                filter: this.filters.id
+            })
+        }
 
         if (this.filters.title) {
             wheres.push({
@@ -522,7 +530,7 @@ export class Articles {
     }
 
     get data() {
-        return this.dataProxy
+        return super.data
     }
 
     set data(articlesRaw) {
@@ -530,7 +538,7 @@ export class Articles {
 
         for (let article of articlesRaw) {
             const articleId = article.id
-            const dataValues = article.dataValues
+            const dataValues = article['dataValues']
             const hub = {
                 id: dataValues['Hub.id'],
                 name: dataValues['Hub.name']
@@ -578,18 +586,6 @@ export class Articles {
         this.dataProxy = articles
     }
 
-    get total() {
-        return this.totalProxy
-    }
-
-    set total(totalRaw) {
-        if (totalRaw.length > 0) {
-            const dataValues = totalRaw[0].dataValues
-
-            this.totalProxy = parseInt(dataValues.total)
-        }
-    }
-
     async setData() {
         try {
             this.data = await this.db.query(prepareQuery(`
@@ -607,7 +603,7 @@ export class Articles {
                     ${this.cols.tag.hub} AS "Tag.hub",
                     ${this.cols.answers} AS "answers",
                     ${this.cols.votes} AS "votes"
-                    FROM "${this.articleModel.tableName}" AS "Article"
+                FROM "${this.articleModel.tableName}" AS "Article"
                     INNER JOIN "${this.userModel.tableName}" AS "User" ON ${this.cols.author} = ${this.cols.user.id} ${this.userWhere}
                     INNER JOIN ("${this.articleHubModel.tableName}" AS "ArticleHub" 
                         INNER JOIN "${this.hubModel.tableName}" AS "Hub" ON ${this.cols.hub.id} = "ArticleHub"."hub") ON ${this.cols.id} = "ArticleHub"."article" ${this.hubWhere}
@@ -615,19 +611,19 @@ export class Articles {
                         INNER JOIN "${this.tagModel.tableName}" AS "Tag" ON ${this.cols.tag.id} = "ArticleTag"."tag") ON ${this.cols.id} = "ArticleTag"."article" ${this.tagWhere}
                     LEFT OUTER JOIN "${this.articleAnswerModel.tableName}" AS "ArticleAnswer" ON ${this.cols.id} = "ArticleAnswer"."article" 
                     LEFT OUTER JOIN "${this.articleVoteModel.tableName}" AS "ArticleVote" ON ${this.cols.id} = "ArticleVote"."article"
-                    WHERE ${this.where}
-                    GROUP BY
-                        ${this.cols.id},
-                        ${this.cols.user.id},
-                        ${this.cols.user.email},
-                        ${this.cols.hub.id},
-                        "ArticleHub"."id",
-                        ${this.cols.tag.id},
-                        "ArticleTag"."id"
-                    HAVING ${this.having}    
-                    ORDER BY ${this.order}
-                    OFFSET ${this.offset}
-                    LIMIT ${this.limit}    
+                WHERE ${this.where}
+                GROUP BY
+                    ${this.cols.id},
+                    ${this.cols.user.id},
+                    ${this.cols.user.email},
+                    ${this.cols.hub.id},
+                    "ArticleHub"."id",
+                    ${this.cols.tag.id},
+                    "ArticleTag"."id"
+                HAVING ${this.having}    
+                ORDER BY ${this.order}
+                OFFSET ${this.offset}
+                LIMIT ${this.limit}    
             `), {
                 model: this.articleModel,
                 type: QueryTypes.SELECT
@@ -636,7 +632,7 @@ export class Articles {
             this.total = await this.db.query(prepareQuery(`
                 SELECT 
                     ${this.cols.count} AS "total"
-                    FROM "${this.articleModel.tableName}" AS "Article"
+                FROM "${this.articleModel.tableName}" AS "Article"
                     INNER JOIN "${this.userModel.tableName}" AS "User" ON ${this.cols.author} = ${this.cols.user.id} ${this.userWhere}
                     INNER JOIN ("${this.articleHubModel.tableName}" AS "ArticleHub" INNER JOIN "${this.hubModel.tableName}" AS "Hub" ON ${this.cols.hub.id} = "ArticleHub"."hub") ON ${this.cols.id} = "ArticleHub"."article" ${this.hubWhere}
                     INNER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag" INNER JOIN "${this.tagModel.tableName}" AS "Tag" ON ${this.cols.tag.id} = "ArticleTag"."tag") ON ${this.cols.id} = "ArticleTag"."article" ${this.tagWhere}
@@ -646,7 +642,7 @@ export class Articles {
                         GROUP BY ${this.cols.id}
                         HAVING ${this.having}
                     ) AS "ArticlesAnswerVote" ON ${this.cols.id} = "ArticlesAnswerVote"."id"
-                    WHERE ${this.where};
+                WHERE ${this.where};
             `), {
                 model: this.articleModel,
                 type: QueryTypes.SELECT

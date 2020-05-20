@@ -5,6 +5,6 @@ import {
     all
 } from '../controllers/hubs'
 
-router.get('/all', all)
+router.post('/all', all)
 
 export default router

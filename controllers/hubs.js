@@ -1,5 +1,5 @@
 import {Hubs} from "../models/hub";
-import {Tags} from "../models/tag"
+import {TagsInHub} from "../models/tag"
 
 const HUBS_LIMIT = 10
 const TAGS_LIMIT = 10
@@ -27,43 +27,30 @@ const responseBody = (
 
 export const all = async (req, res) => {
     const data = {
-        limit: parseInt(req.query.limit) || HUBS_LIMIT,
-        offset: parseInt(req.query.offset) || 0
+        limit: parseInt(req.body.limit) || HUBS_LIMIT,
+        offset: parseInt(req.body.offset) || 0,
+        filters: req.body.filters || false,
+        sorts: req.body.sorts || false
     }
 
     const hubs = new Hubs(data)
-    const tags = new Tags({
-        limit: TAGS_LIMIT,
-        offset: 0
-    })
 
     try {
-        await hubs.setAll()
-
-        const hubsData = []
+        await hubs.setData()
 
         for (let hub of hubs.data) {
-            await tags.setAllInHub(hub.id)
-
-            hubsData.push({
+            const tags = new TagsInHub({
                 id: hub.id,
-                name: hub.name,
-                createdAt: hub.createdAt,
-                articles: parseInt(hub.dataValues.articles),
-                tags: {
-                    total: tags.total,
-                    data: tags.data.map(tag => ({
-                        id: tag.id,
-                        name: tag.name,
-                        createdAt: tag.createdAt,
-                        articles: parseInt(tag.dataValues.articles)
-                    }))
-                }
+                limit: TAGS_LIMIT
             })
+
+            await tags.setData()
+
+            hub.tags.data = tags.data
         }
 
         res.json(responseBody(
-            hubsData,
+            hubs.data,
             'all',
             200,
             null,
