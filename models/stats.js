@@ -11,7 +11,6 @@ export class Stats {
         this.users = 0
         this.hubs = 0
         this.tags = 0
-        this.relatedTags = []
     }
 
     async setData() {

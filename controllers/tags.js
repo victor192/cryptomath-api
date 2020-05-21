@@ -1,6 +1,6 @@
 import {Tags} from "../models/tag"
 
-const TAGS_LIMIT = 15
+const TAGS_LIMIT = 20
 
 const responseBody = (
     data,
@@ -25,29 +25,19 @@ const responseBody = (
 
 export const all = async (req, res) => {
     const data = {
-        limit: parseInt(req.query.limit) || TAGS_LIMIT,
-        offset: parseInt(req.query.offset) || 0
+        limit: parseInt(req.body.limit) || TAGS_LIMIT,
+        offset: parseInt(req.body.offset) || 0,
+        filters: req.body.filters || false,
+        sorts: req.body.sorts || false
     }
 
     const tags = new Tags(data)
 
     try {
-        await tags.setAll()
-
-        const tagsData = []
-
-        for (let tag of tags.data) {
-            tagsData.push({
-                id: tag.id,
-                name: tag.name,
-                hub: tag.hub,
-                createdAt: tag.createdAt,
-                articles: parseInt(tag.dataValues.articles)
-            })
-        }
+        await tags.setData()
 
         res.json(responseBody(
-            tagsData,
+            tags.data,
             'all',
             200,
             null,

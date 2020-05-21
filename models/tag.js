@@ -3,7 +3,12 @@ import {QueryTypes, DataTypes} from "sequelize";
 import {getConnection} from "../core/database"
 import {getInstance} from "./index";
 import {tags} from "../tests/tags"
-import {prepareQuery} from "../utils/queries";
+import {
+    prepareOrder,
+    prepareQuery,
+    prepareWhere
+} from "../utils/queries";
+import {FilteredList} from "./mixins";
 
 export const TagModel = () => {
     const db = getConnection()
@@ -56,76 +61,181 @@ export const TagDefaults = (model) => {
     }
 }
 
-export class Tag {
-    constructor(model) {
-        this.model = model
-        this.data = null
+const tagsFields = [
+    {
+        field: 'id',
+        filter: 'id',
+        sortable: false
+    },
+    {
+        field: 'name',
+        filter: 'text',
+        sortable: true
+    },
+    {
+        field: 'hub',
+        filter: 'id',
+        sortable: false
+    },
+    {
+        field: 'articles',
+        filter: 'numeric',
+        sortable: true
+    }
+]
+
+export class Tags extends FilteredList {
+    constructor({filters, sorts, limit, offset}) {
+        super({
+            fields: tagsFields,
+            filters,
+            sorts,
+            limit,
+            offset
+        })
+
+        this.tagModel = getInstance('Tag')
+        this.articleTagModel = getInstance('ArticleTag')
+        this.articleModel = getInstance('Article')
     }
 
-    async setData(id) {
-        try {
-            const tag = await this.model.findOne({
-                where: {
-                    id: id
-                }
-            })
-
-            if (!tag) {
-                return false
-            }
-
-            this.data = tag
-
-            return true
-        } catch (error) {
-            throw error
+    get cols() {
+        return {
+            id: '"Tag"."id"',
+            name: '"Tag"."name"',
+            hub: '"Tag"."hub"',
+            articles: 'COUNT(DISTINCT("Article"."id"))'
         }
     }
-}
 
-export class Tags {
-    constructor({limit, offset}) {
-        this.db = getConnection()
-        this.articleModel = getInstance('Article')
-        this.articleTagModel = getInstance('ArticleTag')
-        this.tagModel = getInstance('Tag')
-        this.limit = limit
-        this.offset = offset
-        this.data = []
-        this.total = 0
+    get where() {
+        const wheres = []
+
+        if (this.filters.id) {
+            wheres.push({
+                column: this.cols.id,
+                filter: this.filters.id
+            })
+        }
+
+        if (this.filters.name) {
+            wheres.push({
+                column: this.cols.name,
+                filter: this.filters.name
+            })
+        }
+
+        if (this.filters.hub) {
+            wheres.push({
+                column: this.cols.hub,
+                filter: this.filters.hub
+            })
+        }
+
+        return prepareWhere(wheres)
     }
 
-    async setAll() {
+    get having() {
+        const havings = []
+
+        if (this.filters.articles) {
+            havings.push({
+                column: this.cols.articles,
+                filter: this.filters.articles
+            })
+        }
+
+        return prepareWhere(havings)
+    }
+
+    get order() {
+        const orders = []
+
+        if (this.sorts.name) {
+            orders.push({
+                column: this.cols.name,
+                direction: this.sorts.name
+            })
+        }
+
+        if (this.sorts.articles) {
+            orders.push({
+                column: this.cols.articles,
+                direction: this.sorts.articles
+            })
+        }
+        else {
+            orders.push({
+                column: this.cols.articles,
+                direction: 'DESC'
+            })
+        }
+
+        return prepareOrder(orders)
+    }
+
+    get data() {
+        return super.data
+    }
+
+    set data(tagsRaw) {
+        const tags = []
+
+        for (let tag of tagsRaw) {
+            const dataValues = tag['dataValues']
+            const tagObject = {
+                id: tag.id,
+                name: tag.name,
+                hub: tag.hub,
+                articles: parseInt(dataValues.articles)
+            }
+
+            tags.push(tagObject)
+        }
+
+        this.dataProxy = tags
+    }
+
+    async setData() {
         try {
-            this.data = await this.tagModel.findAll({
-                attributes: [
-                    'id',
-                    'name',
-                    'createdAt',
-                    [this.db.fn("COUNT", this.db.col("Articles.id")), "articles"]
-                ],
-                include: [
-                    {
-                        model: this.articleModel,
-                        duplicating: false,
-                        attributes: [],
-                    }
-                ],
-                group: [
-                    'Tag.id',
-                    'Articles.id',
-                    'Articles.ArticleTag.id'
-                ],
-                order: [
-                    [this.db.fn("COUNT", this.db.col("Articles.id")), 'DESC']
-                ],
-                offset: this.offset,
-                limit: this.limit
+            this.data = await this.db.query(prepareQuery(`
+                SELECT DISTINCT
+                    ${this.cols.id},
+                    ${this.cols.name},
+                    ${this.cols.hub},
+                    ${this.cols.articles} AS "articles"
+                FROM "${this.tagModel.tableName}" AS "Tag"
+                LEFT OUTER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag"
+                        INNER JOIN "${this.articleModel.tableName}" AS "Article" ON "Article"."id" = "ArticleTag"."article") ON ${this.cols.id} = "ArticleTag"."tag"
+                WHERE ${this.where}
+                GROUP BY
+                    ${this.cols.id}
+                HAVING ${this.having}    
+                ORDER BY ${this.order}
+                OFFSET ${this.offset}
+                LIMIT ${this.limit}    
+            `), {
+                model: this.tagModel,
+                type: QueryTypes.SELECT
             })
 
-            this.total = await this.tagModel.count()
-
-            return true
+            this.total = await this.db.query(prepareQuery(`
+                SELECT COUNT("id") AS "total"
+                    FROM (
+                        SELECT DISTINCT
+                            ${this.cols.id} AS "id"
+                        FROM "${this.tagModel.tableName}" AS "Tag"
+                            LEFT OUTER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag"
+                            INNER JOIN "${this.articleModel.tableName}" AS "Article" ON "Article"."id" = "ArticleTag"."article") ON ${this.cols.id} = "ArticleTag"."tag"
+                        WHERE ${this.where}
+                        GROUP BY
+                            ${this.cols.id}
+                        HAVING ${this.having}
+                    ) AS "result"
+            `), {
+                model: this.tagModel,
+                type: QueryTypes.SELECT
+            })
         } catch (error) {
             throw error
         }

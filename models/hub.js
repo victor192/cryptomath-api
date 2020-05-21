@@ -113,7 +113,6 @@ export class Hubs extends FilteredList {
         return {
             id: '"Hub"."id"',
             name: '"Hub"."name"',
-            count: 'COUNT(DISTINCT("Hub"."id"))',
             tags: 'COUNT(DISTINCT("Tag"."id"))',
             articles: 'COUNT(DISTINCT("Article"."id"))'
         }
