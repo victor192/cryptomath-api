@@ -277,7 +277,9 @@ export class Tags extends FilteredList {
                 LIMIT ${this.limit}    
             `), {
                 model: this.tagModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
 
             this.total = await this.db.query(prepareQuery(`
@@ -295,7 +297,9 @@ export class Tags extends FilteredList {
                     ) AS "result"
             `), {
                 model: this.tagModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
         } catch (error) {
             throw error
@@ -340,6 +344,7 @@ export class TagsInHub {
         }
 
         this.dataProxy = tags
+        this.timing = 0
     }
 
     async setData() {
@@ -356,7 +361,11 @@ export class TagsInHub {
                 ORDER BY COUNT(DISTINCT(${this.cols.id})) DESC
             `), {
                 model: this.tagModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => {
+                    this.timing = parseInt(timing)
+                }
             })
         } catch (error) {
             throw error

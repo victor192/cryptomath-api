@@ -6,6 +6,7 @@ const responseBody = (
     data,
     endpoint,
     code,
+    time = 0,
     error = null,
     limit = TAGS_LIMIT,
     offset = 0,
@@ -19,7 +20,8 @@ const responseBody = (
         total,
         success: !error,
         code,
-        error
+        error,
+        time
     }
 })
 
@@ -41,6 +43,7 @@ export const all = async (req, res) => {
             tags.data,
             'all',
             200,
+            tags.timing,
             null,
             data.limit,
             data.offset,
@@ -51,6 +54,7 @@ export const all = async (req, res) => {
             null,
             'all',
             500,
+            tags.timing,
             {
                 source: 'internal',
                 type: 'exception',

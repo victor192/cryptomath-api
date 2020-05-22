@@ -8,6 +8,7 @@ const responseBody = (
     data,
     endpoint,
     code,
+    time = 0,
     error = null,
     limit = HUBS_LIMIT,
     offset = 0,
@@ -21,7 +22,8 @@ const responseBody = (
         total,
         success: !error,
         code,
-        error
+        error,
+        time
     }
 })
 
@@ -47,6 +49,7 @@ export const all = async (req, res) => {
 
             await tags.setData()
 
+            hubs.addTiming(tags.timing)
             hub.tags.data = tags.data
         }
 
@@ -54,6 +57,7 @@ export const all = async (req, res) => {
             hubs.data,
             'all',
             200,
+            hubs.timing,
             null,
             data.limit,
             data.offset,
@@ -64,6 +68,7 @@ export const all = async (req, res) => {
             null,
             'all',
             500,
+            hubs.timing,
             {
                 source: 'internal',
                 type: 'exception',

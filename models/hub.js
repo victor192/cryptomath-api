@@ -297,7 +297,9 @@ export class Hubs extends FilteredList {
                 LIMIT ${this.limit}    
             `), {
                 model: this.hubModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
 
             this.total = await this.db.query(prepareQuery(`
@@ -316,7 +318,9 @@ export class Hubs extends FilteredList {
                     ) AS "result"
             `), {
                 model: this.hubModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
         } catch (error) {
             throw error

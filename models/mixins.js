@@ -16,6 +16,8 @@ export class FilteredList {
 
         this.dataProxy = []
         this.totalProxy = 0
+
+        this.timing = 0
     }
 
     get data() {
@@ -34,5 +36,9 @@ export class FilteredList {
                 this.totalProxy = parseInt(dataValues.total)
             }
         }
+    }
+
+    addTiming(timing) {
+        this.timing += parseInt(timing)
     }
 }

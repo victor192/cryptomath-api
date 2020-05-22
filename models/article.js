@@ -683,7 +683,9 @@ export class Articles extends FilteredList {
                 LIMIT ${this.limit}    
             `), {
                 model: this.articleModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
 
             this.total = await this.db.query(prepareQuery(`
@@ -702,7 +704,9 @@ export class Articles extends FilteredList {
                 WHERE ${this.where}
             `), {
                 model: this.articleModel,
-                type: QueryTypes.SELECT
+                type: QueryTypes.SELECT,
+                benchmark: true,
+                logging: (sql, timing) => this.addTiming(timing)
             })
 
             return true
