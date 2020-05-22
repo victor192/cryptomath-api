@@ -28,7 +28,8 @@ export const all = async (req, res) => {
         limit: parseInt(req.body.limit) || ARTICLES_LIMIT,
         offset: parseInt(req.body.offset) || 0,
         filters: req.body.filters || false,
-        sorts: req.body.sorts || false
+        sorts: req.body.sorts || false,
+        search: req.body.search || false
     }
 
     const articles = new Articles(data)

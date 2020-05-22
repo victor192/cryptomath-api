@@ -4,7 +4,12 @@ export const prepareWhere = (wheres, and = false) => {
         const filter = whereObject.filter
         const operation = filter.operation
 
-        return `(${column} ${operation})`
+        if (filter['tsMatch']) {
+            return `${column} @@ ${operation}`
+        }
+        else {
+            return `(${column} ${operation})`
+        }
     }).join(` AND `) : '1=1'
 
     return and ? `AND ${whereQuery}` : whereQuery

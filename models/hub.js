@@ -10,10 +10,24 @@ import {
 } from "../utils/queries";
 import {FilteredList} from "./mixins";
 
+const updateHubTsv = (db, model) => async (hub, options) => {
+    try {
+        await model.update({
+            tsv: db.literal("setweight(to_tsvector(name), 'A') || setweight(to_tsvector(description), 'B')")
+        }, {
+            where: {
+                id: hub['id']
+            },
+            transaction: options.transaction
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
+}
+
 export const HubModel = () => {
     const db = getConnection()
-
-    return db.define('Hub', {
+    const model = db.define('Hub', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -23,11 +37,30 @@ export const HubModel = () => {
             type: DataTypes.TEXT,
             allowNull: false
         },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: false
+        },
+        tsv: {
+            type: 'TSVECTOR'
+        }
     }, {
         freezeTableName: true,
         tableName: 'Hubs',
-        timestamps: false
+        timestamps: false,
+        indexes: [
+            {
+                name: 'hub_search',
+                fields: ['tsv'],
+                using: 'gin'
+            }
+        ]
     })
+
+    model.afterCreate(updateHubTsv(db, model))
+    model.afterUpdate(updateHubTsv(db, model))
+
+    return model
 }
 
 export const HubDefaults = (model) => {
@@ -94,13 +127,14 @@ const hubsFields = [
 ]
 
 export class Hubs extends FilteredList {
-    constructor({filters, sorts, limit, offset}) {
+    constructor({filters, sorts, limit, offset, search}) {
         super({
             fields: hubsFields,
             filters,
             sorts,
             limit,
-            offset
+            offset,
+            search
         })
 
         this.hubModel = getInstance('Hub')
@@ -113,9 +147,18 @@ export class Hubs extends FilteredList {
         return {
             id: '"Hub"."id"',
             name: '"Hub"."name"',
+            tsv: '"Hub"."tsv"',
             tags: 'COUNT(DISTINCT("Tag"."id"))',
             articles: 'COUNT(DISTINCT("Article"."id"))'
         }
+    }
+
+    get tsQuery() {
+        return this.search ? `plainto_tsquery('${this.search}')` : ''
+    }
+
+    get rankCol() {
+        return this.search ? `TS_RANK(${this.cols.tsv}, ${this.tsQuery})` : ''
     }
 
     get where() {
@@ -132,6 +175,16 @@ export class Hubs extends FilteredList {
             wheres.push({
                 column: this.cols.name,
                 filter: this.filters.name
+            })
+        }
+
+        if (this.search) {
+            wheres.push({
+                column: this.cols.tsv,
+                filter: {
+                    tsMatch: true,
+                    operation: this.tsQuery
+                }
             })
         }
 
@@ -188,6 +241,13 @@ export class Hubs extends FilteredList {
             })
         }
 
+        if (this.search) {
+            orders.push({
+                column: '"rank"',
+                direction: 'DESC'
+            })
+        }
+
         return prepareOrder(orders)
     }
 
@@ -221,6 +281,7 @@ export class Hubs extends FilteredList {
                 SELECT DISTINCT
                     ${this.cols.id},
                     ${this.cols.name},
+                    ${this.search ? `${this.rankCol} AS "rank",` : ''}
                     ${this.cols.tags} AS "tags",
                     ${this.cols.articles} AS "articles"
                 FROM "${this.hubModel.tableName}" AS "Hub"

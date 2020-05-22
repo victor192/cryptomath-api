@@ -5,13 +5,14 @@ import {
 } from "./filters";
 
 export class FilteredList {
-    constructor({fields, filters, sorts, limit, offset}) {
+    constructor({fields, filters, sorts, limit, offset, search}) {
         this.db = getConnection()
 
         this.filters = filters ? getFilters(fields, filters) : {}
         this.sorts = sorts ? getSorts(fields, sorts) : {}
         this.limit = limit
         this.offset = offset
+        this.search = search ? String(search) : false
 
         this.dataProxy = []
         this.totalProxy = 0

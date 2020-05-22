@@ -30,7 +30,8 @@ export const all = async (req, res) => {
         limit: parseInt(req.body.limit) || HUBS_LIMIT,
         offset: parseInt(req.body.offset) || 0,
         filters: req.body.filters || false,
-        sorts: req.body.sorts || false
+        sorts: req.body.sorts || false,
+        search: req.body.search || false
     }
 
     const hubs = new Hubs(data)

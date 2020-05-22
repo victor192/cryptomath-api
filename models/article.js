@@ -56,7 +56,7 @@ export const ArticleModel = () => {
         tableName: 'Articles',
         indexes: [
             {
-                name: 'search',
+                name: 'article_search',
                 fields: ['tsv'],
                 using: 'gin'
             }
@@ -379,13 +379,14 @@ const articlesFields = [
 ]
 
 export class Articles extends FilteredList {
-    constructor({filters, sorts, limit, offset}) {
+    constructor({filters, sorts, limit, offset, search}) {
         super({
             fields: articlesFields,
             filters,
             sorts,
             limit,
-            offset
+            offset,
+            search
         })
 
         this.articleModel = getInstance('Article')
@@ -404,6 +405,7 @@ export class Articles extends FilteredList {
             title: '"Article"."title"',
             createdAt: '"Article"."createdAt"',
             author: '"Article"."author"',
+            tsv: '"Article"."tsv"',
             user: {
                 id: '"User"."id"',
                 email: '"User"."email"',
@@ -423,6 +425,14 @@ export class Articles extends FilteredList {
             answers: 'COUNT(DISTINCT("ArticleAnswer"."id"))',
             votes: 'COALESCE(SUM("ArticleVote"."vote"), 0)'
         }
+    }
+
+    get tsQuery() {
+        return this.search ? `plainto_tsquery('${this.search}')` : ''
+    }
+
+    get rankCol() {
+        return this.search ? `TS_RANK(${this.cols.tsv}, ${this.tsQuery})` : ''
     }
 
     get where() {
@@ -449,7 +459,17 @@ export class Articles extends FilteredList {
             })
         }
 
-        return prepareWhere(wheres)
+        if (this.search) {
+            wheres.push({
+                column: this.cols.tsv,
+                filter: {
+                    tsMatch: true,
+                    operation: this.tsQuery
+                }
+            })
+        }
+
+        return prepareWhere(wheres, false)
     }
 
     get userWhere() {
@@ -555,6 +575,13 @@ export class Articles extends FilteredList {
             })
         }
 
+        if (this.search) {
+            orders.push({
+                column: '"rank"',
+                direction: 'DESC'
+            })
+        }
+
         return prepareOrder(orders)
     }
 
@@ -622,6 +649,7 @@ export class Articles extends FilteredList {
                     ${this.cols.id},
                     ${this.cols.title},
                     ${this.cols.createdAt},
+                    ${this.search ? `${this.rankCol} AS "rank",` : ''}
                     ${this.cols.user.id} AS "User.id",
                     ${this.cols.user.displayName} AS "User.displayName",
                     ${this.cols.user.hash} AS "User.hash",
@@ -671,7 +699,7 @@ export class Articles extends FilteredList {
                         GROUP BY ${this.cols.id}
                         HAVING ${this.having}
                     ) AS "ArticlesAnswerVote" ON ${this.cols.id} = "ArticlesAnswerVote"."id"
-                WHERE ${this.where};
+                WHERE ${this.where}
             `), {
                 model: this.articleModel,
                 type: QueryTypes.SELECT

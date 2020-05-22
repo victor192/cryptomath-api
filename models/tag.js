@@ -10,10 +10,24 @@ import {
 } from "../utils/queries";
 import {FilteredList} from "./mixins";
 
+const updateTagTsv = (db, model) => async (tag, options) => {
+    try {
+        await model.update({
+            tsv: db.literal("setweight(to_tsvector(name), 'A') || setweight(to_tsvector(description), 'B')")
+        }, {
+            where: {
+                id: tag['id']
+            },
+            transaction: options.transaction
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
+}
+
 export const TagModel = () => {
     const db = getConnection()
-
-    return db.define('Tag', {
+    const model = db.define('Tag', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -23,15 +37,34 @@ export const TagModel = () => {
             type: DataTypes.TEXT,
             allowNull: false
         },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
         hub: {
             type: DataTypes.INTEGER,
             allowNull: false
+        },
+        tsv: {
+            type: 'TSVECTOR'
         }
     }, {
         freezeTableName: true,
         tableName: 'Tags',
-        timestamps: false
+        timestamps: false,
+        indexes: [
+            {
+                name: 'tag_search',
+                fields: ['tsv'],
+                using: 'gin'
+            }
+        ]
     })
+
+    model.afterCreate(updateTagTsv(db, model))
+    model.afterUpdate(updateTagTsv(db, model))
+
+    return model
 }
 
 export const TagAssociations = (model) => {
@@ -85,13 +118,14 @@ const tagsFields = [
 ]
 
 export class Tags extends FilteredList {
-    constructor({filters, sorts, limit, offset}) {
+    constructor({filters, sorts, limit, offset, search}) {
         super({
             fields: tagsFields,
             filters,
             sorts,
             limit,
-            offset
+            offset,
+            search
         })
 
         this.tagModel = getInstance('Tag')
@@ -104,8 +138,17 @@ export class Tags extends FilteredList {
             id: '"Tag"."id"',
             name: '"Tag"."name"',
             hub: '"Tag"."hub"',
+            tsv: '"Tag"."tsv"',
             articles: 'COUNT(DISTINCT("Article"."id"))'
         }
+    }
+
+    get tsQuery() {
+        return this.search ? `plainto_tsquery('${this.search}')` : ''
+    }
+
+    get rankCol() {
+        return this.search ? `TS_RANK(${this.cols.tsv}, ${this.tsQuery})` : ''
     }
 
     get where() {
@@ -129,6 +172,16 @@ export class Tags extends FilteredList {
             wheres.push({
                 column: this.cols.hub,
                 filter: this.filters.hub
+            })
+        }
+
+        if (this.search) {
+            wheres.push({
+                column: this.cols.tsv,
+                filter: {
+                    tsMatch: true,
+                    operation: this.tsQuery
+                }
             })
         }
 
@@ -171,6 +224,13 @@ export class Tags extends FilteredList {
             })
         }
 
+        if (this.search) {
+            orders.push({
+                column: '"rank"',
+                direction: 'DESC'
+            })
+        }
+
         return prepareOrder(orders)
     }
 
@@ -203,6 +263,7 @@ export class Tags extends FilteredList {
                     ${this.cols.id},
                     ${this.cols.name},
                     ${this.cols.hub},
+                    ${this.search ? `${this.rankCol} AS "rank",` : ''}
                     ${this.cols.articles} AS "articles"
                 FROM "${this.tagModel.tableName}" AS "Tag"
                 LEFT OUTER JOIN ("${this.articleTagModel.tableName}" AS "ArticleTag"
