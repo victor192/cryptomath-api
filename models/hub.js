@@ -261,39 +261,4 @@ export class Hubs extends FilteredList {
             throw error
         }
     }
-    /*async setAll() {
-        try {
-            this.data = await this.hubModel.findAll({
-                attributes: [
-                    'id',
-                    'name',
-                    'createdAt',
-                    [this.db.fn("COUNT", this.db.col("Articles.id")), "articles"]
-                ],
-                include: [
-                    {
-                        model: this.articleModel,
-                        duplicating: false,
-                        attributes: [],
-                    }
-                ],
-                group: [
-                    'Hub.id',
-                    'Articles.id',
-                    'Articles.ArticleHub.id'
-                ],
-                order: [
-                    [this.db.fn("COUNT", this.db.col("Articles.id")), 'DESC']
-                ],
-                offset: this.offset,
-                limit: this.limit
-            })
-
-            this.total = await this.hubModel.count()
-
-            return true
-        } catch (error) {
-            throw error
-        }
-    }*/
 }

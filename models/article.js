@@ -13,10 +13,24 @@ import {
 } from "../utils/queries";
 import {FilteredList} from "./mixins";
 
+const updateArticleTsv = (db, model) => async (article, options) => {
+    try {
+        await model.update({
+            tsv: db.literal("setweight(to_tsvector(title), 'A') || setweight(to_tsvector(raw), 'B')")
+        }, {
+            where: {
+                id: article['id']
+            },
+            transaction: options.transaction
+        })
+    } catch (error) {
+        throw new Error(error)
+    }
+}
+
 export const ArticleModel = () => {
     const db = getConnection()
-
-    return db.define('Article', {
+    const model = db.define('Article', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
@@ -34,10 +48,25 @@ export const ArticleModel = () => {
             type: DataTypes.INTEGER,
             allowNull: false
         },
+        tsv: {
+            type: 'TSVECTOR'
+        }
     }, {
         freezeTableName: true,
-        tableName: 'Articles'
+        tableName: 'Articles',
+        indexes: [
+            {
+                name: 'search',
+                fields: ['tsv'],
+                using: 'gin'
+            }
+        ]
     })
+
+    model.afterCreate(updateArticleTsv(db, model))
+    model.afterUpdate(updateArticleTsv(db, model))
+
+    return model
 }
 
 export const ArticleHubModel = () => {
