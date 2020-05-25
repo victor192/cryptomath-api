@@ -24,14 +24,21 @@ export const getFilter = (type, value) => {
 export const getFilters = (fields, values) => {
     const filters = {}
 
-    for (let [field, value] of Object.entries(values)) {
-        const fieldObject = fields.find(f => f.field === field)
+    if (Array.isArray(values)) {
+        for (let filter of values) {
+            const field = filter.field
+            const value = filter.value
 
-        if (fieldObject && fieldObject.filter) {
-            const filter = getFilter(fieldObject.filter, value)
+            if (field && value) {
+                const fieldObject = fields.find(f => f.field === field)
 
-            if (filter) {
-                filters[fieldObject.field] = filter
+                if (fieldObject && fieldObject.filter) {
+                    const filter = getFilter(fieldObject.filter, value)
+
+                    if (filter) {
+                        filters[fieldObject.field] = filter
+                    }
+                }
             }
         }
     }
@@ -42,13 +49,18 @@ export const getFilters = (fields, values) => {
 export const getSorts = (fields, values) => {
     const sorts = {}
 
-    for (let [field, order] of Object.entries(values)) {
-        const fieldObject = fields.find(f => f.field === field)
+    if (Array.isArray(values)) {
+        for (let sort of values) {
+            const field = sort.field
+            const direction = sort.direction
 
-        if (fieldObject && fieldObject.sortable) {
-            const direction = (order === 'asc') ? 'ASC' : 'DESC'
+            if (field && direction) {
+                const fieldObject = fields.find(f => f.field === field)
 
-            sorts[fieldObject.field] = direction
+                if (fieldObject && fieldObject.sortable) {
+                    sorts[fieldObject.field] = (direction === 'asc') ? 'ASC' : 'DESC'
+                }
+            }
         }
     }
 
