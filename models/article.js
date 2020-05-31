@@ -1,7 +1,7 @@
-import { DataTypes, QueryTypes } from "sequelize";
+import { DataTypes, QueryTypes } from "sequelize"
 
 import {getConnection} from "../core/database"
-import {getInstance} from "./index";
+import {getInstance} from "./index"
 import {
     articles,
     answers
@@ -10,8 +10,8 @@ import {
     prepareWhere,
     prepareOrder,
     prepareQuery
-} from "../utils/queries";
-import {FilteredList} from "./mixins";
+} from "../utils/queries"
+import {FilteredList} from "./mixins"
 
 const updateArticleTsv = (db, model) => async (article, options) => {
     try {

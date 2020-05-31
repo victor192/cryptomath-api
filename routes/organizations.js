@@ -3,8 +3,8 @@ const router = express.Router()
 
 import {
     all
-} from '../controllers/funds'
+} from '../controllers/organizations'
 
-router.get('/all', all)
+router.post('/all', all)
 
 export default router

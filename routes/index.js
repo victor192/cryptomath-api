@@ -8,7 +8,7 @@ import articles from "./articles"
 import hubs from "./hubs"
 import tags from "./tags"
 import stats from "./stats"
-import funds from "./funds"
+import organizations from "./organizations"
 
 app.use('/captcha' , captcha)
 app.use('/auth', auth)
@@ -17,6 +17,6 @@ app.use('/articles', articles)
 app.use('/hubs', hubs)
 app.use('/tags', tags)
 app.use('/stats', stats)
-app.use('/funds', funds)
+app.use('/organizations', organizations)
 
 export default app

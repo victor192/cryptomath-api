@@ -7,9 +7,11 @@ import {
     UserDefaults
 } from "./user"
 import {
-    FundModel,
-    FundDefaults
-} from "./fund"
+    OrganizationAssociations,
+    OrganizationModel,
+    OrganizationUserModel,
+    OrganizationDefaults, OrganizationUserDefaults
+} from "./organization"
 import {
     ArticleAssociations,
     ArticleDefaults,
@@ -45,7 +47,10 @@ const models = [
         create: UserModel
     },
     {
-        create: FundModel,
+        create: OrganizationModel,
+    },
+    {
+        create: OrganizationUserModel
     },
     {
         create: HubModel
@@ -72,6 +77,10 @@ const models = [
 
 const associations = [
     {
+        model: 'Organization',
+        associate: OrganizationAssociations
+    },
+    {
         model: 'Tag',
         associate: TagAssociations
     },
@@ -91,8 +100,12 @@ const defaults = [
         create: UserDefaults
     },
     {
-        model: 'Fund',
-        create: FundDefaults
+        model: 'Organization',
+        create: OrganizationDefaults
+    },
+    {
+        model: 'OrganizationUser',
+        create: OrganizationUserDefaults
     },
     {
         model: 'Hub',

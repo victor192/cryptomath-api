@@ -12,7 +12,7 @@ export const users = [
         id: 2,
         displayName: 'James Parshall',
         email: 'admin@usa.gov',
-        password: 'Blockchair12345',
+        password: 'Cryptomath12345',
         confirmCode: 'effcd6150a7841b55c3997e3d4588117',
         hash: 'effcd6150a7841b55c3997e3d4588117',
         confirmedAt: '2020-05-06 21:16:42.528+03'
@@ -21,7 +21,7 @@ export const users = [
         id: 3,
         displayName: 'Saurabh',
         email: 'saura@email.com',
-        password: '12345Blockchair',
+        password: '12345Cryptomath',
         confirmCode: 'effcd6150a7841b55c3997e3d4588117',
         hash: 'effcd6150a7841b55c3997e3d4588117',
         confirmedAt: '2020-05-09 11:18:12.528+03'
