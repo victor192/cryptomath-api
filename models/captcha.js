@@ -38,20 +38,23 @@ export const CaptchaModel = () => {
     })
 }
 
-export const CaptchaDefaults = (model) => {
+export const CaptchaDefaults = async (model) => {
     const tasks = getTasks()
 
     try {
-        tasks.forEach(async (t) => {
+        for (let task of tasks) {
             await model.findOrCreate({
-                where: {name: t.name, taskId: t.id},
+                where: {
+                    name: task.name,
+                    taskId: task.id
+                },
                 defaults: {
-                    name: t.name,
-                    taskId: t.id,
-                    difficulty: t.difficulty
+                    name: task.name,
+                    taskId: task.id,
+                    difficulty: task.difficulty
                 }
             })
-        })
+        }
     } catch (error) {
         throw new Error(error)
     }

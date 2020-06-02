@@ -1,4 +1,4 @@
-import {Stats} from "../models/stats";
+import {Stats} from "../models/stats"
 
 const responseBody = (
     body,
@@ -12,11 +12,12 @@ const responseBody = (
         endpoint: `/stats/${endpoint}`,
         success: !error,
         code,
-        error
+        error,
+        time
     }
 })
 
-export const general = async (req, res) => {
+export const all = async (req, res) => {
     const stats = new Stats()
 
     try {
@@ -29,14 +30,16 @@ export const general = async (req, res) => {
                 hubs: stats.hubs,
                 tags: stats.tags
             },
-            'general'
+            'all',
+            200,
+            stats.timing
         ))
     } catch(error) {
         res.json(responseBody(
             null,
-            'general',
+            'all',
             500,
-            0,
+            stats.timing,
             {
                 source: 'internal',
                 type: 'exception',

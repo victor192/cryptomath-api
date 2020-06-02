@@ -3,7 +3,7 @@ const md5 = require('md5')
 const { Op, DataTypes } = require('sequelize')
 
 import {getConnection} from "../core/database"
-import {getInstance} from "./index";
+import {getInstance} from "./index"
 import {users} from "../tests/users"
 
 export const UserModel = () => {
@@ -69,14 +69,17 @@ export const UserModel = () => {
     return model
 }
 
-export const UserDefaults = (model) => {
+export const UserDefaults = async (model) => {
     try {
-        users.forEach(async (user) => {
+        for (let user of users) {
             await model.findOrCreate({
-                where: {id: user.id, email: user.email},
+                where: {
+                    id: user.id,
+                    email: user.email
+                },
                 defaults: user
             })
-        })
+        }
     } catch (error) {
         throw new Error(error)
     }
@@ -85,6 +88,7 @@ export const UserDefaults = (model) => {
 export class User {
     constructor() {
         this.userModel = getInstance('User')
+
         this.dataProxy = null
     }
 
@@ -113,9 +117,10 @@ export class User {
                 return false
             }
 
+            const confirmCode = String(data.email + data.displayName)
             const userData = Object.assign(data, {
-                confirmCode: '' + data.email + data.displayName,
-                hash: md5(self.confirmCode)
+                confirmCode,
+                hash: md5(confirmCode)
             })
             const user = this.userModel.build(userData)
             await user.validate()
@@ -125,7 +130,20 @@ export class User {
 
             return true
         } catch (error) {
-            throw error
+            if (error.name === 'SequelizeValidationError') {
+                const item = error.errors[0]
+
+                throw {
+                    name: 'validation',
+                    data: {
+                        source: item.path,
+                        type: 'invalid'
+                    }
+                }
+            }
+            else {
+                throw new Error(error)
+            }
         }
     }
 
@@ -154,7 +172,7 @@ export class User {
 
             return [true, null]
         } catch (error) {
-            throw error
+            throw new Error(error)
         }
     }
 
@@ -174,7 +192,7 @@ export class User {
 
             return true
         } catch (error) {
-            throw error
+            throw new Error(error)
         }
     }
 }

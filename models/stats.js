@@ -7,7 +7,7 @@ export class Stats extends Benchmark {
 
         this.articleModel = getInstance('Article')
         this.userModel = getInstance('User')
-        this.organizationModel = getInstance('Organizations')
+        this.organizationModel = getInstance('Organization')
         this.hubModel = getInstance('Hub')
         this.tagModel = getInstance('Tag')
 

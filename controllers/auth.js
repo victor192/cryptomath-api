@@ -156,17 +156,12 @@ export const register = async (req, res) => {
                 }
             ))
         }
-        else if (error.name === 'SequelizeValidationError') {
-            const item = error.errors[0]
-
+        else if (error.name === 'validation') {
             res.json(responseBody(
                 null,
                 'register',
                 500,
-                {
-                    source: item.path,
-                    type: 'invalid'
-                }
+                error.data
             ))
         }
         else {

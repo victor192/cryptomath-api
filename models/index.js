@@ -10,7 +10,8 @@ import {
     OrganizationAssociations,
     OrganizationModel,
     OrganizationUserModel,
-    OrganizationDefaults, OrganizationUserDefaults
+    OrganizationDefaults,
+    OrganizationUserDefaults
 } from "./organization"
 import {
     ArticleAssociations,

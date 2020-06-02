@@ -1,17 +1,17 @@
-import {QueryTypes, DataTypes} from "sequelize";
+import {QueryTypes, DataTypes} from "sequelize"
 
 import {getConnection} from "../core/database"
-import {getInstance} from "./index";
+import {getInstance} from "./index"
 import {tags} from "../tests/tags"
 import {
     prepareOrder,
     prepareQuery,
     prepareWhere
-} from "../utils/queries";
+} from "../utils/queries"
 import {
     Benchmark,
     FilteredList
-} from "./mixins";
+} from "./mixins"
 
 const updateTagTsv = (db, model) => async (tag, options) => {
     try {
@@ -84,14 +84,17 @@ export const TagAssociations = (model) => {
     })
 }
 
-export const TagDefaults = (model) => {
+export const TagDefaults = async (model) => {
     try {
-        tags.forEach(async (tag) => {
+        for (let tag of tags) {
             await model.findOrCreate({
-                where: {id: tag.id, name: tag.name},
+                where: {
+                    id: tag.id,
+                    name: tag.name
+                },
                 defaults: tag
             })
-        })
+        }
     } catch (error) {
         throw new Error(error)
     }

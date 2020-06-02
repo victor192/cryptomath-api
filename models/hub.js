@@ -67,14 +67,17 @@ export const HubModel = () => {
     return model
 }
 
-export const HubDefaults = (model) => {
+export const HubDefaults = async (model) => {
     try {
-        hubs.forEach(async (hub) => {
+        for (let hub of hubs) {
             await model.findOrCreate({
-                where: {id: hub.id, name: hub.name},
+                where: {
+                    id: hub.id,
+                    name: hub.name
+                },
                 defaults: hub
             })
-        })
+        }
     } catch (error) {
         throw new Error(error)
     }
