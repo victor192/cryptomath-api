@@ -8,7 +8,10 @@ import {
     prepareQuery,
     prepareWhere
 } from "../utils/queries";
-import {FilteredList} from "./mixins";
+import {
+    Benchmark,
+    FilteredList
+} from "./mixins";
 
 const updateTagTsv = (db, model) => async (tag, options) => {
     try {
@@ -307,9 +310,12 @@ export class Tags extends FilteredList {
     }
 }
 
-export class TagsInHub {
+export class TagsInHub extends Benchmark {
     constructor({id, limit}) {
+        super()
+
         this.db = getConnection()
+
         this.tagModel = getInstance('Tag')
         this.articleTagModel = getInstance('ArticleTag')
         this.articleModel = getInstance('Article')
@@ -344,7 +350,6 @@ export class TagsInHub {
         }
 
         this.dataProxy = tags
-        this.timing = 0
     }
 
     async setData() {
@@ -363,9 +368,7 @@ export class TagsInHub {
                 model: this.tagModel,
                 type: QueryTypes.SELECT,
                 benchmark: true,
-                logging: (sql, timing) => {
-                    this.timing = parseInt(timing)
-                }
+                logging: (sql, timing) => this.addTiming(timing)
             })
         } catch (error) {
             throw error

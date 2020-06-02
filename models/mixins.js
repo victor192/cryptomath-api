@@ -4,8 +4,20 @@ import {
     getSorts
 } from "./filters";
 
-export class FilteredList {
+export class Benchmark {
+    constructor() {
+        this.timing = 0
+    }
+
+    addTiming(timing) {
+        this.timing += parseInt(timing)
+    }
+}
+
+export class FilteredList extends Benchmark {
     constructor({fields, filters, sorts, limit, offset, search}) {
+        super()
+
         this.db = getConnection()
 
         this.filters = filters ? getFilters(fields, filters) : {}
@@ -36,9 +48,5 @@ export class FilteredList {
                 this.totalProxy = parseInt(dataValues.total)
             }
         }
-    }
-
-    addTiming(timing) {
-        this.timing += parseInt(timing)
     }
 }

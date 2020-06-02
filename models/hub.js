@@ -41,6 +41,10 @@ export const HubModel = () => {
             type: DataTypes.TEXT,
             allowNull: false
         },
+        logo: {
+            type: DataTypes.TEXT,
+            allowNull: false
+        },
         tsv: {
             type: 'TSVECTOR'
         }
@@ -147,6 +151,8 @@ export class Hubs extends FilteredList {
         return {
             id: '"Hub"."id"',
             name: '"Hub"."name"',
+            description: '"Hub"."description"',
+            logo: '"Hub"."logo"',
             tsv: '"Hub"."tsv"',
             tags: 'COUNT(DISTINCT("Tag"."id"))',
             articles: 'COUNT(DISTINCT("Article"."id"))'
@@ -263,6 +269,8 @@ export class Hubs extends FilteredList {
             const hubObject = {
                 id: hub.id,
                 name: hub.name,
+                description: hub.description,
+                logo: hub.logo,
                 tags: {
                     total: parseInt(dataValues.tags)
                 },
@@ -281,6 +289,8 @@ export class Hubs extends FilteredList {
                 SELECT DISTINCT
                     ${this.cols.id},
                     ${this.cols.name},
+                    ${this.cols.description},
+                    ${this.cols.logo},
                     ${this.search ? `${this.rankCol} AS "rank",` : ''}
                     ${this.cols.tags} AS "tags",
                     ${this.cols.articles} AS "articles"

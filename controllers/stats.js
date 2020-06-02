@@ -4,6 +4,7 @@ const responseBody = (
     body,
     endpoint,
     code = 200,
+    time = 0,
     error = null
 ) => ({
     data: body,
@@ -24,6 +25,7 @@ export const general = async (req, res) => {
         res.json(responseBody({
                 articles: stats.articles,
                 users: stats.users,
+                organizations: stats.organizations,
                 hubs: stats.hubs,
                 tags: stats.tags
             },
@@ -34,6 +36,7 @@ export const general = async (req, res) => {
             null,
             'general',
             500,
+            0,
             {
                 source: 'internal',
                 type: 'exception',

@@ -5,7 +5,7 @@ const ORGANIZATIONS_LIMIT = 10
 const responseBody = (
     data,
     endpoint,
-    code,
+    code = 200,
     time = 0,
     error = null,
     limit = ORGANIZATIONS_LIMIT,

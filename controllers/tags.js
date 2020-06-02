@@ -5,7 +5,7 @@ const TAGS_LIMIT = 20
 const responseBody = (
     data,
     endpoint,
-    code,
+    code = 200,
     time = 0,
     error = null,
     limit = TAGS_LIMIT,
