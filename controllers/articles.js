@@ -1,5 +1,6 @@
 import {Articles} from "../models/article"
 
+//  Restrictions for queries
 const ARTICLES_LIMIT = 10
 
 const responseBody = (
@@ -26,6 +27,7 @@ const responseBody = (
 })
 
 export const all = async (req, res) => {
+    //  Parse data from request body
     const data = {
         limit: parseInt(req.body.limit) || ARTICLES_LIMIT,
         offset: parseInt(req.body.offset) || 0,
@@ -33,12 +35,16 @@ export const all = async (req, res) => {
         sorts: req.body.sorts || false,
         search: req.body.search || false
     }
+    const extended = req.body.extended ? !!req.body.extended : false
 
-    const articles = new Articles(data)
+    //  Initializing Articles class
+    const articles = new Articles(data, extended)
 
     try {
+        //  Loading articles data from a database
         await articles.setData()
 
+        //  Data output
         res.json(responseBody(
             articles.data,
             'all',
@@ -50,6 +56,7 @@ export const all = async (req, res) => {
             articles.total
         ))
     } catch(error) {
+        //  Error output
         res.json(responseBody(
             null,
             'all',

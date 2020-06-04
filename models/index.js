@@ -40,42 +40,22 @@ import {
 } from "../utils/console"
 import {getConnection} from "../core/database";
 
+//  List of all Sequelize models
 const models = [
-    {
-        create: CaptchaModel
-    },
-    {
-        create: UserModel
-    },
-    {
-        create: OrganizationModel,
-    },
-    {
-        create: OrganizationUserModel
-    },
-    {
-        create: HubModel
-    },
-    {
-        create: TagModel
-    },
-    {
-        create: ArticleModel
-    },
-    {
-        create: ArticleHubModel
-    },
-    {
-        create: ArticleTagModel
-    },
-    {
-        create: ArticleAnswerModel
-    },
-    {
-        create: ArticleVoteModel
-    }
+    CaptchaModel,
+    UserModel,
+    OrganizationModel,
+    OrganizationUserModel,
+    HubModel,
+    TagModel,
+    ArticleModel,
+    ArticleHubModel,
+    ArticleTagModel,
+    ArticleAnswerModel,
+    ArticleVoteModel
 ]
 
+// List of all Sequelize associations
 const associations = [
     {
         model: 'Organization',
@@ -91,6 +71,7 @@ const associations = [
     }
 ]
 
+// List of all table defaults rows
 const defaults = [
     {
         model: 'Captcha',
@@ -139,8 +120,8 @@ const SYNC_FORCE = true
 
 export const create = () => {
     try {
-        models.forEach(modelObject => {
-            const model = modelObject.create()
+        models.forEach(createModel => {
+            const model = createModel()
             outputLog(`Model '${model.name}' has been created`)
 
             instances[model.name] = model

@@ -13,10 +13,11 @@ import {
 } from "../utils/queries"
 import {FilteredList} from "./mixins"
 
+//  Callback for updating tsv vector
 const updateArticleTsv = (db, model) => async (article, options) => {
     try {
         await model.update({
-            tsv: db.literal("setweight(to_tsvector(title), 'A') || setweight(to_tsvector(raw), 'B')")
+            tsv: db.literal("setweight(to_tsvector(title), 'A') || setweight(to_tsvector(abstract), 'B')")
         }, {
             where: {
                 id: article['id']
@@ -28,6 +29,7 @@ const updateArticleTsv = (db, model) => async (article, options) => {
     }
 }
 
+//  Sequelize model for the Articles table
 export const ArticleModel = () => {
     const db = getConnection()
     const model = db.define('Article', {
@@ -37,6 +39,10 @@ export const ArticleModel = () => {
             autoIncrement: true
         },
         title: {
+            type: DataTypes.TEXT,
+            allowNull: false
+        },
+        abstract: {
             type: DataTypes.TEXT,
             allowNull: false
         },
@@ -69,6 +75,7 @@ export const ArticleModel = () => {
     return model
 }
 
+//  Sequelize model for the ArticlesHubs junction table
 export const ArticleHubModel = () => {
     const db = getConnection()
 
@@ -95,6 +102,7 @@ export const ArticleHubModel = () => {
     })
 }
 
+//  Sequelize model for the ArticlesTags junction table
 export const ArticleTagModel = () => {
     const db = getConnection()
 
@@ -121,6 +129,7 @@ export const ArticleTagModel = () => {
     })
 }
 
+//  Sequelize model for the ArticlesAnswers junction table
 export const ArticleAnswerModel = () => {
     const db = getConnection()
 
@@ -148,6 +157,7 @@ export const ArticleAnswerModel = () => {
     })
 }
 
+//  Sequelize model for the ArticlesVotes junction table
 export const ArticleVoteModel = () => {
     const db = getConnection()
 
@@ -175,6 +185,7 @@ export const ArticleVoteModel = () => {
     })
 }
 
+//  Generating Sequelize associations for the Articles table
 export const ArticleAssociations = (model) => {
     const articleHubModel = getInstance('ArticleHub')
     const articleTagModel = getInstance('ArticleTag')
@@ -261,6 +272,7 @@ export const ArticleAssociations = (model) => {
     })
 }
 
+// Load defaults for Articles table
 export const ArticleDefaults = async (model) => {
     try {
         for (let article of articles) {
@@ -270,6 +282,7 @@ export const ArticleDefaults = async (model) => {
                     id: article.id,
                     title: article.title,
                     author: article.author,
+                    abstract: article.abstract,
                     raw: article.raw,
                     createdAt: article.createdAt
                 }
@@ -280,6 +293,7 @@ export const ArticleDefaults = async (model) => {
     }
 }
 
+// Load defaults for ArticlesHubs junction table
 export const ArticleHubDefaults = async (model) => {
     try {
         for (let article of articles) {
@@ -298,6 +312,7 @@ export const ArticleHubDefaults = async (model) => {
     }
 }
 
+// Load defaults for ArticlesTags junction table
 export const ArticleTagDefaults = async (model) => {
     try {
         for (let article of articles) {
@@ -316,6 +331,7 @@ export const ArticleTagDefaults = async (model) => {
     }
 }
 
+// Load defaults for ArticlesAnswers table
 export const ArticleAnswerDefaults = async (model) => {
     try {
         for (let answer of answers) {
@@ -335,6 +351,7 @@ export const ArticleAnswerDefaults = async (model) => {
     }
 }
 
+// Filtered fields for Articles class
 const articlesFields = [
     {
         field: 'id',
@@ -378,8 +395,9 @@ const articlesFields = [
     }
 ]
 
+// Class for getting a filtered list of articles
 export class Articles extends FilteredList {
-    constructor({filters, sorts, limit, offset, search}) {
+    constructor({filters, sorts, limit, offset, search}, extended) {
         super({
             fields: articlesFields,
             filters,
@@ -388,6 +406,8 @@ export class Articles extends FilteredList {
             offset,
             search
         })
+
+        this.extended = extended
 
         this.articleModel = getInstance('Article')
         this.articleHubModel = getInstance('ArticleHub')
@@ -399,10 +419,12 @@ export class Articles extends FilteredList {
         this.tagModel = getInstance('Tag')
     }
 
+    //  SELECT fields
     get cols() {
         return {
             id: '"Article"."id"',
             title: '"Article"."title"',
+            abstract: '"Article"."abstract"',
             createdAt: '"Article"."createdAt"',
             author: '"Article"."author"',
             tsv: '"Article"."tsv"',
@@ -435,6 +457,7 @@ export class Articles extends FilteredList {
         return this.search ? `TS_RANK(${this.cols.tsv}, ${this.tsQuery})` : ''
     }
 
+    //  WHERE clause for Articles table
     get where() {
         const wheres = []
 
@@ -472,6 +495,7 @@ export class Articles extends FilteredList {
         return prepareWhere(wheres, false)
     }
 
+    //  WHERE clause for Users table
     get userWhere() {
         const wheres = []
 
@@ -485,6 +509,7 @@ export class Articles extends FilteredList {
         return prepareWhere(wheres, true)
     }
 
+    //  WHERE clause for Hubs table
     get hubWhere() {
         const wheres = []
 
@@ -498,6 +523,7 @@ export class Articles extends FilteredList {
         return prepareWhere(wheres, true)
     }
 
+    //  WHERE clause for Tags table
     get tagWhere() {
         const wheres = []
 
@@ -511,6 +537,7 @@ export class Articles extends FilteredList {
         return prepareWhere(wheres, true)
     }
 
+    //  HAVING clause for Articles table
     get having() {
         const havings = []
 
@@ -531,6 +558,7 @@ export class Articles extends FilteredList {
         return prepareWhere(havings)
     }
 
+    //  ORDER BY clause for Articles table
     get order() {
         const orders = []
 
@@ -589,6 +617,7 @@ export class Articles extends FilteredList {
         return super.data
     }
 
+    //  Data preparation
     set data(articlesRaw) {
         const articles = []
 
@@ -623,6 +652,7 @@ export class Articles extends FilteredList {
                 const newArticleObject = {
                     id: article.id,
                     title: article.title,
+                    ...(this.extended && {abstract: article.abstract}),
                     createdAt: article.createdAt,
                     author: {
                         id: dataValues['User.id'],
@@ -642,12 +672,14 @@ export class Articles extends FilteredList {
         this.dataProxy = articles
     }
 
+    // Load data
     async setData() {
         try {
             this.data = await this.db.query(prepareQuery(`
                 SELECT DISTINCT
                     ${this.cols.id},
                     ${this.cols.title},
+                    ${this.extended ? `${this.cols.abstract},` : ''}
                     ${this.cols.createdAt},
                     ${this.search ? `${this.rankCol} AS "rank",` : ''}
                     ${this.cols.user.id} AS "User.id",

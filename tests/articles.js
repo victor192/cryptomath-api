@@ -2,6 +2,7 @@ export const articles = [
     {
         id: 1,
         title: String.raw`Upper bound $x\mapsto\frac{W\left(\frac{2\alpha}{x^2}\right)}{2\alpha}$ for $x\in[0,1]$ Lambert function`,
+        abstract: 'test',
         raw: 'test',
         author: 1,
         hubs: [1],
@@ -11,6 +12,7 @@ export const articles = [
     {
         id: 2,
         title: String.raw`Q: Optimizing blockchain token purchase. Finding maximum value of a function.`,
+        abstract: 'test',
         raw: 'test',
         author: 1,
         hubs: [1],
@@ -20,6 +22,7 @@ export const articles = [
     {
         id: 3,
         title: String.raw`Is $P=NP$ an $NP$-complete problem?`,
+        abstract: 'test',
         raw: 'test',
         author: 1,
         hubs: [1],
@@ -28,7 +31,8 @@ export const articles = [
     },
     {
         id: 4,
-        title: String.raw`There is every reason to beleive that this whole PHP is shit`,
+        title: String.raw`PHP Best Practices to Follow in 2020`,
+        abstract: 'Web development trends seem to be heading more towards server-side scripting languages over client-side scripting languages. And it can be difficult to decide where to start and what to choose.',
         raw: 'ahaha',
         author: 2,
         hubs: [2],
@@ -38,6 +42,7 @@ export const articles = [
     {
         id: 5,
         title: String.raw`Difference between various blockchain protocols`,
+        abstract: 'Blockchain',
         raw: 'test',
         author: 3,
         hubs: [3],
