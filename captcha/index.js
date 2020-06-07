@@ -1,7 +1,8 @@
 import limit from './limit'
 import logarithm from "./logarithm"
-import integral from "./integral";
+import integral from "./integral"
 import calculus from "./calculus"
+import series from "./series"
 import {
     outputLog
 } from "../utils/console"
@@ -10,7 +11,8 @@ const tasksObject = {
     [limit.name]: limit.tasks,
     [logarithm.name]: logarithm.tasks,
     [integral.name]: integral.tasks,
-    [calculus.name]: calculus.tasks
+    [calculus.name]: calculus.tasks,
+    [series.name]: series.tasks
 }
 
 const tasks = []
