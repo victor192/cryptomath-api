@@ -4,12 +4,14 @@ export const randomInt = (min, max) => {
     return Math.round(rand)
 }
 
-export const factorial = (x) => {
-    if (x === 0) {
-        return 1
+export const factorial = (n) => {
+    let val = 1
+
+    for (let i = 2; i <= n; i++) {
+        val *= i
     }
 
-    return x * factorial(x-1)
+    return val
 }
 
 export const binomial = (n, k) => {
