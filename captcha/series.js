@@ -11,7 +11,7 @@ export default {
                 const b = randomInt(2, 7)
                 const c = randomInt(1, 6)
 
-                return [a, b]
+                return [a, b, c]
             },
             math: (a, b, c) => String.raw`\sum\limits_{k = 0}^{${a}} {${a} \choose k} + \sum\limits_{k = 1}^{${b}} k {${b} \choose k} + \sum\limits_{k = 0}^{${c}} {${c} \choose k}^2`,
             answer: (a, b, c) => Math.pow(2, a) + b * Math.pow(2, (b - 1)) + binomial(2 * c, c)
@@ -46,6 +46,23 @@ export default {
 
                 return 0
             }
+        },
+        {
+            id: 4,
+            difficulty: 1,
+            generate: () => {
+                const k = randomInt(1, 5)
+                const l = randomInt(2, 13)
+
+                return [k, l]
+            },
+            math: (k, l) => {
+                const a = Math.pow(2, k)
+                const b = a + Math.pow(2, l)
+
+                return String.raw`\log_2 \Bigg( \sum\limits_{n=1}^{\infty} \Big ( \frac{${a}}{${b}} \Big )^2 \Bigg )`
+            },
+            answer: (k, l) => k - l
         }
     ]
 }

@@ -48,6 +48,32 @@ export default {
                 return String.raw`\exp \Bigg ( \int\limits_{0}^{\infty} \frac{\exp (-${a} x) - \exp (-${b} x)}{x} \; {d}x \Bigg )`
             },
             answer: (a, b) => Math.floor(b / a)
+        },
+        {
+            id: 4,
+            difficulty: 1,
+            generate: () => {
+                const a = randomInt(1, 54321)
+
+                return [a]
+            },
+            math: (a) => String.raw`\ln \Bigg ( \frac{2}{\pi} \int\limits_{0}^{+\infty} \frac{\cos ${a}x}{1 + x^2} \; dx \Bigg )`,
+            answer: (a) => (-1) * a
+        },
+        {
+            id: 5,
+            difficulty: 1,
+            generate: () => {
+                const a = randomInt(1, 17)
+
+                return [a]
+            },
+            math: (a) => {
+                const square = Math.pow(a, 2)
+
+                return String.raw`\frac{32}{\pi} \int\limits_{0}^{${a}} x^2 \sqrt{${square} - x^2} \; dx`
+            },
+            answer: (a) => 2 * Math.pow(a, 4)
         }
     ]
 }
