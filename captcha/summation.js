@@ -29,7 +29,7 @@ export default {
             id: 3,
             difficulty: 1,
             generate: () => {
-                const k = randomInt(4, 9876)
+                const k = randomInt(4, 976)
 
                 return [k]
             },
@@ -37,7 +37,7 @@ export default {
                 const n = 2 * k + 1
                 const double = 2 * n
 
-                return String.raw`\sin^2 \frac{\pi}{${double}} + \sin^2 \Big ( 2 \cdot \frac{\pi}{${double}} \Big ) + \sin^2 \Big ( 3 \cdot \frac{\pi}{${double}} \Big ) + \ldots + \sin^2 \Big ( ${n} \cdot \frac{\pi}{${double}} \Big )`
+                return String.raw`\sin^2 \frac{\pi}{${double}} + \sin^2 \frac{2 \pi}{${double}} + \sin^2 \frac{3 \pi}{${double}} + \ldots + \sin^2 \frac{${n} \pi}{${double}}`
             },
             answer: (k) => k + 1
         }
