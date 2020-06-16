@@ -34,6 +34,11 @@ app.use(bearerToken())
 app.use(cors())
 app.use(router)
 
+app.use('/robots.txt', (req, res) => {
+    res.type('text/plain')
+    res.send("User-agent: *\nDisallow: /")
+})
+
 app.get('/', (req, res) => {
     res.json({
         data: "I'll blaste you"
