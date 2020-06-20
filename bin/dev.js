@@ -1,4 +1,4 @@
-require('babel-register')
-require("babel-core/register")
-require("babel-polyfill")
-require('../index')
+require('@babel/register')
+require("@babel/core")
+require("@babel/polyfill")
+require('../dist')
