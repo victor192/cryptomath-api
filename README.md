@@ -37,7 +37,6 @@ pm2 delete cryptomath-api
 pm2 start npm --name "cryptomath-api" -- start
 ```
 
-
 ## NGINX configuration
 Your [NGINX](https://www.nginx.com/) site configuration should look similar:
 ```bash
@@ -52,9 +51,9 @@ server {
     ssl_session_cache shared:le_nginx_SSL:1m; # managed by Certbot
     ssl_session_timeout 1440m; # managed by Certbot
 
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # managed by Certbot
-    ssl_prefer_server_ciphers on; # managed by Certbot
-    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"; # managed by Certbot
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
 
     location / {
         proxy_set_header Host $host;
@@ -63,6 +62,13 @@ server {
       	proxy_set_header X-Forwarded-Proto $scheme;
 
         proxy_pass http://127.0.0.1:5000; # Port set on the environment variables of your Node.js part for https (this is the most important part)
+    }
+
+    access_log <PATH_TO_NGINX_LOGS>/access.log;
+    error_log  <PATH_TO_NGINX_LOGS>/error.log error;
+
+    location ~ /\.(?!well-known).* {
+        deny all;
     }
 
     # Redirect non-https traffic to https
